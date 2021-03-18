@@ -9,7 +9,7 @@ from torchvision.transforms import (
     ToTensor,
 )
 
-from geode.datamodules.base_datamodule import BaseDataModule
+from cface.datamodules.base_datamodule import BaseDataModule
 
 
 class CelebADataModule(BaseDataModule):
@@ -26,7 +26,7 @@ class CelebADataModule(BaseDataModule):
         ])
         full_dataset = CelebA(
             root=self.data_path,
-            target_type='attr',
+            target_type='identity',
             transform=data_transforms,
             download=download,
         )
