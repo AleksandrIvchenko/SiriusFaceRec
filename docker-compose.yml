@@ -1,6 +1,20 @@
 version: "3.9"
 services:
+  triton:
+    image: nvcr.io/nvidia/tritonserver:20.12-py3
+    command: tritonserver --model-repository=/models
+    shm_size: '2gb'
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - /home/sirius/examples/model_repository:/models
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+    runtime: nvidia
   web:
     build: app
     ports:
       - "80:80"
+    runtime: nvidia
