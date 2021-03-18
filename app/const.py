@@ -1,0 +1,2 @@
+CLIENT_TIMEOUT = 10
+URL = 'triton:8001'
