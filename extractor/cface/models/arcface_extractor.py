@@ -55,7 +55,6 @@ class ArcFaceExtractor(BaseModule):
         angle = self.head(embeddings, labels)
 
         loss = self.criterion(angle, labels)
-        print('!!!!!!!!!', loss)
         accuracy = 0
 
         info = {

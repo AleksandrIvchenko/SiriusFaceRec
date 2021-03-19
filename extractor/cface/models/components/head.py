@@ -40,10 +40,10 @@ class ArcFaceLayer(Module):
             labels,
         ):
         cos_theta = torch.mm(
-            embeddings,
-            self.weights,
+            F.normalize(embeddings),
+            F.normalize(self.weights),
         ).clamp(-1, 1)
-        sin_theta = torch.sqrt(1 - torch.pow(cos_theta, 2))
+        sin_theta = torch.sqrt(1 - torch.pow(cos_theta, 2)).clamp(0, 1)
         #cos(theta + m) = cos(theta)cos(m) - sin(theta)sin(m)
         cos_theta_m = cos_theta * self.cos_m - sin_theta * self.sin_m
         cos_theta_m = torch.where(
@@ -98,8 +98,6 @@ class ArcFaceLayer(Module):
         )
         output *= self.s
         '''
-        print('?????????', output)
-        print('&&&&&&&&&', F.log_softmax(output))
         return output
 
 

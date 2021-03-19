@@ -22,7 +22,7 @@ class CommonArguments:
 class DataArguments:
     batch_size: int = 128
     data_path: Path = Path('./data/celeba')
-    learning_rate: float = 3e-10
+    learning_rate: float = 3e-4
     num_workers: int = 8
     val_ratio: float = 0.1
 
