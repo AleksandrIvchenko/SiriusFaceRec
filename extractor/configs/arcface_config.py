@@ -1,3 +1,4 @@
+from typing import Tuple
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -21,7 +22,7 @@ class CommonArguments:
 class DataArguments:
     batch_size: int = 128
     data_path: Path = Path('./data/celeba')
-    learning_rate: float = 3e-4
+    learning_rate: float = 3e-10
     num_workers: int = 8
     val_ratio: float = 0.1
 
@@ -29,6 +30,7 @@ class DataArguments:
 @dataclass
 class TrainArguments:
     max_epoch: int = 10
+    new_size: Tuple[int, int] = (128, 128)
     one_batch_overfit: int = 1
     save_period: int = 20
     scheduler_gamma: float = 0.5
@@ -37,7 +39,7 @@ class TrainArguments:
 
 @dataclass
 class SpecificArguments:
-    specific: bool = False
+    n_classes: int = 10178
 
 
 print(CommonArguments.device)

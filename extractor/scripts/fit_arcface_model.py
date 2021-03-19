@@ -19,6 +19,7 @@ def main(args):
     Randomer.set_seed(seed=args.seed)
 
     model = ArcFaceExtractor(
+        n_classes=args.n_classes,
         learning_rate=args.learning_rate,
         verbose=args.verbose,
         device=args.device,
@@ -29,7 +30,10 @@ def main(args):
         batch_size=args.batch_size,
         num_workers=args.num_workers,
     )
-    datamodule.setup(val_ratio=args.val_ratio)
+    datamodule.setup(
+        val_ratio=args.val_ratio,
+        new_size=args.new_size
+    )
 
     logger = NeptuneLogger(
         api_token=args.neptune_api_token,
