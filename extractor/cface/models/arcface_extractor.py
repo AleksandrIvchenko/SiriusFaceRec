@@ -29,7 +29,7 @@ class ArcFaceExtractor(BaseModule):
             out_features=n_hiddens,
         )
         self.head = Head(
-            mode='arc',
+            mode='arcface',
             in_features=n_hiddens,
             out_features=n_classes,
         )
