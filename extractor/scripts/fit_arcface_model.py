@@ -3,11 +3,11 @@ from pathlib import Path
 
 from cface.datamodules import CelebADataModule
 from cface.loggers import NeptuneLogger
-from cface.models import ArcFaceModel
+from cface.models import ArcFaceExtractor
 from cface.trainer import Trainer
 from cface.utils.randomer import Randomer
 
-from configs.cface_config import (
+from configs.arcface_config import (
     CommonArguments,
     DataArguments,
     TrainArguments,
@@ -18,7 +18,7 @@ from configs.cface_config import (
 def main(args):
     Randomer.set_seed(seed=args.seed)
 
-    model = ArcFaceModel(
+    model = ArcFaceExtractor(
         learning_rate=args.learning_rate,
         verbose=args.verbose,
         device=args.device,
@@ -32,7 +32,7 @@ def main(args):
     datamodule.setup(val_ratio=args.val_ratio)
 
     logger = NeptuneLogger(
-        api_key=args.neptune_api_token,
+        api_token=args.neptune_api_token,
         project_name=args.neptune_project_name,
         experiment_name=args.neptune_experiment_name,
     )
