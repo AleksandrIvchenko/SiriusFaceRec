@@ -16,3 +16,6 @@ services:
     ports:
       - "80:80"
     runtime: nvidia
+  telegram:
+    build: telegram
+    runtime: nvidia
