@@ -1,5 +1,6 @@
 import logging
 
+import requests
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import (
     Updater,
@@ -17,6 +18,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+URL_PARSE = 'http://web/parse/'
 TOKEN = '1763937310:AAHFmqPqQADl4Qimq3klBnrHm3WF1aDSHUs'
 PHOTO = 1
 
@@ -31,12 +33,14 @@ def start(update: Update, _: CallbackContext) -> int:
 def photo(update: Update, _: CallbackContext) -> int:
     user = update.message.from_user
     photo_file = update.message.photo[-1].get_file()
-    photo_file.download('user_photo.jpg')
-    logger.info("Photo of %s: %s", user.first_name, 'user_photo.jpg')
+    files = {'file': photo_file.download_as_bytearray()}
+    response = requests.post(URL_PARSE, files=files)
+    logger.info(response.text)
+    logger.info(f'User {user.first_name} loaded photo')
     update.message.reply_text(
-        'Отлично. Вот результат:',
+        f'Отлично. Вот результат: {response.text}',
     )
-    update.message.reply_photo(open('user_photo.jpg', 'rb'))
+    # update.message.reply_photo(open('user_photo.jpg', 'rb'))
     update.message.reply_text(
         'Можете загрузить еще одну.',
     )
@@ -45,7 +49,7 @@ def photo(update: Update, _: CallbackContext) -> int:
 
 def cancel(update: Update, _: CallbackContext) -> int:
     user = update.message.from_user
-    logger.info("User %s canceled the conversation.", user.first_name)
+    logger.info(f'User {user.first_name} canceled the conversation.')
     update.message.reply_text(
         'Спасибо, до встречи!', reply_markup=ReplyKeyboardRemove()
     )
