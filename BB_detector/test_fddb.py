@@ -10,20 +10,22 @@ from utils.nms.py_cpu_nms import py_cpu_nms
 import cv2
 from models.retinaface import RetinaFace
 from utils.box_utils import decode, decode_landm
-import time
+from utils.timer import Timer
 
 parser = argparse.ArgumentParser(description='Retinaface')
 
-parser.add_argument('-m', '--trained_model', default='./weights/Resnet50_Final.pth',
+parser.add_argument('-m', '--trained_model', default='./weights/mobilenet0.25_Final.pth',
                     type=str, help='Trained state_dict file path to open')
-parser.add_argument('--network', default='resnet50', help='Backbone network mobile0.25 or resnet50')
+parser.add_argument('--network', default='mobile0.25', help='Backbone network mobile0.25 or resnet50')
+parser.add_argument('--save_folder', default='eval/', type=str, help='Dir to save results')
 parser.add_argument('--cpu', action="store_true", default=False, help='Use cpu inference')
+parser.add_argument('--dataset', default='FDDB', type=str, choices=['FDDB'], help='dataset')
 parser.add_argument('--confidence_threshold', default=0.02, type=float, help='confidence_threshold')
 parser.add_argument('--top_k', default=5000, type=int, help='top_k')
 parser.add_argument('--nms_threshold', default=0.4, type=float, help='nms_threshold')
 parser.add_argument('--keep_top_k', default=750, type=int, help='keep_top_k')
-parser.add_argument('-s', '--save_image', action="store_true", default=True, help='show detection results')
-parser.add_argument('--vis_thres', default=0.6, type=float, help='visualization_threshold')
+parser.add_argument('-s', '--save_image', action="store_true", default=False, help='show detection results')
+parser.add_argument('--vis_thres', default=0.5, type=float, help='visualization_threshold')
 args = parser.parse_args()
 
 
@@ -63,7 +65,6 @@ def load_model(model, pretrained_path, load_to_cpu):
     return model
 
 
-
 if __name__ == '__main__':
     torch.set_grad_enabled(False)
     cfg = None
@@ -81,16 +82,32 @@ if __name__ == '__main__':
     device = torch.device("cpu" if args.cpu else "cuda")
     net = net.to(device)
 
+
+    # save file
+    if not os.path.exists(args.save_folder):
+        os.makedirs(args.save_folder)
+    fw = open(os.path.join(args.save_folder, args.dataset + '_dets.txt'), 'w')
+
+    # testing dataset
+    testset_folder = os.path.join('data', args.dataset, 'images/')
+    testset_list = os.path.join('data', args.dataset, 'img_list.txt')
+    with open(testset_list, 'r') as fr:
+        test_dataset = fr.read().split()
+    num_images = len(test_dataset)
+
+    # testing scale
     resize = 1
 
+    _t = {'forward_pass': Timer(), 'misc': Timer()}
+
     # testing begin
-    for i in range(100):
-        #image_path = "./curve/test.jpg"
-        image_path = "./curve/scar.jpeg"
+    for i, img_name in enumerate(test_dataset):
+        image_path = testset_folder + img_name + '.jpg'
         img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
         img = np.float32(img_raw)
-
+        if resize != 1:
+            img = cv2.resize(img, None, None, fx=resize, fy=resize, interpolation=cv2.INTER_LINEAR)
         im_height, im_width, _ = img.shape
         scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
         img -= (104, 117, 123)
@@ -99,10 +116,10 @@ if __name__ == '__main__':
         img = img.to(device)
         scale = scale.to(device)
 
-        tic = time.time()
+        _t['forward_pass'].tic()
         loc, conf, landms = net(img)  # forward pass
-        print('net forward time: {:.4f}'.format(time.time() - tic))
-
+        _t['forward_pass'].toc()
+        _t['misc'].tic()
         priorbox = PriorBox(cfg, image_size=(im_height, im_width))
         priors = priorbox.forward()
         priors = priors.to(device)
@@ -126,7 +143,8 @@ if __name__ == '__main__':
         scores = scores[inds]
 
         # keep top-K before NMS
-        order = scores.argsort()[::-1][:args.top_k]
+        # order = scores.argsort()[::-1][:args.top_k]
+        order = scores.argsort()[::-1]
         boxes = boxes[order]
         landms = landms[order]
         scores = scores[order]
@@ -134,15 +152,32 @@ if __name__ == '__main__':
         # do NMS
         dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
         keep = py_cpu_nms(dets, args.nms_threshold)
-        # keep = nms(dets, args.nms_threshold,force_cpu=args.cpu)
+
         dets = dets[keep, :]
         landms = landms[keep]
 
         # keep top-K faster NMS
-        dets = dets[:args.keep_top_k, :]
-        landms = landms[:args.keep_top_k, :]
+        # dets = dets[:args.keep_top_k, :]
+        # landms = landms[:args.keep_top_k, :]
 
         dets = np.concatenate((dets, landms), axis=1)
+        _t['misc'].toc()
+
+        # save dets
+        if args.dataset == "FDDB":
+            fw.write('{:s}\n'.format(img_name))
+            fw.write('{:.1f}\n'.format(dets.shape[0]))
+            for k in range(dets.shape[0]):
+                xmin = dets[k, 0]
+                ymin = dets[k, 1]
+                xmax = dets[k, 2]
+                ymax = dets[k, 3]
+                score = dets[k, 4]
+                w = xmax - xmin + 1
+                h = ymax - ymin + 1
+                # fw.write('{:.3f} {:.3f} {:.3f} {:.3f} {:.10f}\n'.format(xmin, ymin, w, h, score))
+                fw.write('{:d} {:d} {:d} {:d} {:.10f}\n'.format(int(xmin), int(ymin), int(w), int(h), score))
+        print('im_detect: {:d}/{:d} forward_pass_time: {:.4f}s misc: {:.4f}s'.format(i + 1, num_images, _t['forward_pass'].average_time, _t['misc'].average_time))
 
         # show image
         if args.save_image:
@@ -151,11 +186,11 @@ if __name__ == '__main__':
                     continue
                 text = "{:.4f}".format(b[4])
                 b = list(map(int, b))
-                #(image, start_point, end_point, color, thickness)
                 cv2.rectangle(img_raw, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
                 cx = b[0]
                 cy = b[1] + 12
-                #cv2.putText(img_raw, text, (cx, cy), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
+                cv2.putText(img_raw, text, (cx, cy),
+                            cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
 
                 # landms
                 cv2.circle(img_raw, (b[5], b[6]), 1, (0, 0, 255), 4)
@@ -164,21 +199,9 @@ if __name__ == '__main__':
                 cv2.circle(img_raw, (b[11], b[12]), 1, (0, 255, 0), 4)
                 cv2.circle(img_raw, (b[13], b[14]), 1, (255, 0, 0), 4)
             # save image
-
-            name = "test.jpg"
-            name_rect = "rect.jpg"
+            if not os.path.exists("./results/"):
+                os.makedirs("./results/")
+            name = "./results/" + str(i) + ".jpg"
             cv2.imwrite(name, img_raw)
 
-            print ("bbbbb", b[0], b[1], b[2], b[3])
-
-            #box = [
-            #    (b[0], b[0] + b[1]),
-            #    (b[2], b[2]+b[3])
-            #]
-
-            #croped_image = img_raw[b[1]: b[1] + b[2]-b[0],  b[0]: b[0] + b[3]-b[1] ]
-            croped_image = img_raw[b[1]: b[1] + b[3] - b[1] , b[0]: b[0] + b[2] - b[0]]
-            cv2.imwrite(name_rect, croped_image)
-
-            #cv2.imwrite(name_rect, img_raw[b[0]:b[1], b[2]:b[3]])
-
+    fw.close()
