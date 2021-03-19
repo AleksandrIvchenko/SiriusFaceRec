@@ -14,7 +14,7 @@ async def parse_image(file):
         file.close()
     except Exception as e:
         print(e)
-        return 'Error parsing'
+        return 'Error parsing file'
 
     return user_id, embedding
 
