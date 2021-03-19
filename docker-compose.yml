@@ -9,9 +9,7 @@ services:
       - "8001:8001"
       - "8002:8002"
     volumes:
-      - /home/sirius/examples/model_repository:/models
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
+      - ./models_repository:/models
     runtime: nvidia
   web:
     build: app
