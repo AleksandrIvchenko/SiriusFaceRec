@@ -10,8 +10,9 @@ from cface.utils import ParametersCounter
 class ArcFaceExtractor(BaseModule):
     def __init__(
             self,
-            family: str = 'resnet',
-            n_layers: int = 18,
+            extractor_family: str = 'resnet',
+            head_mode: str = 'arcface',
+            n_layers: int = 50,
             n_hiddens: int = 512,
             n_classes: int = 10,
             device: torch.device = torch.device('cpu'),
@@ -24,12 +25,12 @@ class ArcFaceExtractor(BaseModule):
         self.verbose = verbose
 
         self.extractor = Extractor(
-            family=family,
+            family=extractor_family,
             n_layers=n_layers,
             out_features=n_hiddens,
         )
         self.head = Head(
-            mode='arcface',
+            mode=head_mode,
             in_features=n_hiddens,
             out_features=n_classes,
         )
@@ -51,9 +52,10 @@ class ArcFaceExtractor(BaseModule):
         images = images.to(self.device)
         labels = labels.to(self.device)
         embeddings = self.extractor.forward(images)
-        angle = self.head.forward(embeddings)
+        angle = self.head.forward(embeddings, labels)
 
         loss = self.criterion(angle, labels)
+        accuracy = 0
 
         info = {
             'loss': loss,

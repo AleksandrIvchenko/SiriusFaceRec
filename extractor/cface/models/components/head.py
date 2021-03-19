@@ -1,6 +1,8 @@
 from collections import OrderedDict
 import math
 
+import torch
+import torch.nn as nn
 from torch import BoolTensor, FloatTensor
 from torch.nn import (
     Linear,
@@ -21,9 +23,10 @@ class ArcFaceLayer(Module):
         ):
         super().__init__()
         self.weights = Parameter(FloatTensor(
-            out_features,
             in_features,
+            out_features,
         ))
+        nn.init.xavier_uniform_(self.weights)
         self.s = s
         self.cos_m = math.cos(m)
         self.sin_m = math.sin(m)
@@ -33,9 +36,10 @@ class ArcFaceLayer(Module):
             embeddings,
             labels,
         ):
+        print(self.weights.shape, embeddings.shape)
         cos_theta = torch.mm(
-            self.weight,
             embeddings,
+            self.weights,
         ).clamp(-1, 1)
         sin_theta = torch.sqrt(1 - torch.pow(cos_theta, 2))
         #cos(theta + m) = cos(theta)cos(m) - sin(theta)sin(m)
@@ -46,7 +50,7 @@ class ArcFaceLayer(Module):
             y=cos_theta,
         )
 
-        mask = BoolTensor(cos_theta.shape[0], cos_theta.shape[1])
+        mask = BoolTensor(len(labels), self.n_classes)
         mask.zero_()
         mask.scatter_(
             dim=1,
@@ -73,18 +77,16 @@ class Head(Module):
             s: float = 64,
         ):
         super().__init__()
-        head_dict = OrderedDict()
         if mode == 'linear':
-            head_dict['linear'] = Linear(
+            self.head = Linear(
                 in_features=in_features,
                 out_features=out_features,
             )
-        elif mode == 'arcface':
-            head_dict['arcface'] = ArcFaceLayer(
+        if mode == 'arcface':
+            self.head = ArcFaceLayer(
                 in_features=in_features,
                 out_features=out_features,
             )
-        self.head = Sequential(head_dict)
 
     def forward(
             self,
