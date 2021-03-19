@@ -9,7 +9,7 @@ class CommonArguments:
     device: torch.device = torch.device(
         'cuda:0' if torch.cuda.is_available() else 'cpu'
     )
-    neptune_api_token: str = open('../neptune_api_token.txt').readline()[:-1]
+    neptune_api_token: str = open('./neptune_api_token.txt').readline()[:-1]
     neptune_experiment_name: str = 'arcface'
     neptune_project_name: str = 'sergevkim/arcface'
     seed: int = 9
@@ -20,7 +20,7 @@ class CommonArguments:
 @dataclass
 class DataArguments:
     batch_size: int = 128
-    data_path: Path = Path('./data')
+    data_path: Path = Path('./data/celeba')
     learning_rate: float = 3e-4
     num_workers: int = 8
     val_ratio: float = 0.1

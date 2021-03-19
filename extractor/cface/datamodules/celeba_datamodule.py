@@ -1,5 +1,6 @@
 from typing import Tuple
 
+import torch
 from torch.utils.data import DataLoader
 from torchvision.datasets import CelebA
 from torchvision.transforms import (
@@ -30,7 +31,15 @@ class CelebADataModule(BaseDataModule):
             transform=data_transforms,
             download=download,
         )
-        self.train_dataset = full_dataset
+
+        full_size = len(full_dataset)
+        val_size = int(val_ratio * full_size)
+        train_size = full_size - val_size
+
+        self.train_dataset, self.val_dataset = torch.utils.data.random_split(
+            dataset=full_dataset,
+            lengths=[train_size, val_size],
+        )
 
 
 if __name__ == '__main__':
