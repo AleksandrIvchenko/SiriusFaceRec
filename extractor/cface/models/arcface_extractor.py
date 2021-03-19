@@ -51,10 +51,11 @@ class ArcFaceExtractor(BaseModule):
         images, labels = batch
         images = images.to(self.device)
         labels = labels.to(self.device)
-        embeddings = self.extractor.forward(images)
-        angle = self.head.forward(embeddings, labels)
+        embeddings = self.extractor(images)
+        angle = self.head(embeddings, labels)
 
         loss = self.criterion(angle, labels)
+        print('!!!!!!!!!', loss)
         accuracy = 0
 
         info = {
