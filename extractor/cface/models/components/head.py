@@ -51,53 +51,21 @@ class ArcFaceLayer(Module):
             cos_theta_m,
             cos_theta,
         )
-        #src = torch.ones_like(
-        #    cos_theta,
-        #    dtype=torch.long,
-        #)
-        #mask = LongTensor(len(labels), self.out_features)
-        #mask.zero_()
-        one_hot = torch.zeros(cos_theta.size(), device='cuda')
-        one_hot.scatter_(1, labels.view(-1, 1).long(), 1)
-        output = (one_hot * cos_theta_m) + ((1.0 - one_hot) * cos_theta)  # you can use torch.where if your torch.__version__ is 0.4
-        output *= self.s
-
-        '''
-        output = cos_theta.to(torch.device('cuda'))
-        cos_theta_m = cos_theta_m.to(torch.device('cuda'))
-        idx_ = torch.arange(0, len(labels), dtype=torch.long)
-        output[idx_, labels] = cos_theta_m[idx_, labels]
-        output *= self.s
-        CUDA PROBLEMS
-        '''
-
-        '''
-        mask = torch.zeros_like(
-            cos_theta,
-            dtype=torch.bool,
+        one_hot = torch.zeros(
+            cos_theta.size(),
+            device='cuda',
         )
-        a = einops.repeat(
-            labels.long(),
-            pattern='b -> b d',
-            d=self.out_features,
+        one_hot.scatter_(
+            1,
+            labels.view(-1, 1).long(),
+            1,
         )
-        print(a.shape, mask.shape)
-
-        mask.scatter_(
-            dim=1,
-            index=a,
-            src=torch.ones_like(
-                cos_theta,
-                dtype=torch.long,
-            ),
-        )
-        output = torch.where(
-            mask,
-            cos_theta_m,
-            cos_theta,
+        output = (
+            one_hot * cos_theta_m +
+            (1.0 - one_hot) * cos_theta
         )
         output *= self.s
-        '''
+
         return output
 
 
