@@ -88,7 +88,6 @@ class Trainer:
                 )
 
                 for metric_name, value in info.items():
-                    print('!', metric_name, value)
                     if self.logger is not None:
                         if type(value) is Tensor:
                             value = value.item()
