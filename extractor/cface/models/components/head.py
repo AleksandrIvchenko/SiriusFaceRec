@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import math
 
-from torch import BoolTensor
+from torch import BoolTensor, FloatTensor
 from torch.nn import (
     Linear,
     Module,
@@ -20,7 +20,7 @@ class ArcFaceLayer(Module):
             s: float = 64,
         ):
         super().__init__()
-        self.weights = Parameter(torch.FloatTensor(
+        self.weights = Parameter(FloatTensor(
             out_features,
             in_features,
         ))
@@ -66,37 +66,34 @@ class ArcFaceLayer(Module):
 class Head(Module):
     def __init__(
             self,
-            mode: str = 'softmax',
+            mode: str = 'arcface',
             in_features: int = 512,
             out_features: int = 10,
             m: float = 0.5,
             s: float = 64,
         ):
         super().__init__()
-        '''
         head_dict = OrderedDict()
-        if mode == 'softmax':
+        if mode == 'linear':
             head_dict['linear'] = Linear(
                 in_features=in_features,
                 out_features=out_features,
             )
-            head_dict['last'] = Softmax()
-        elif mode == 'arc':
-            head_dict['last'] = ArcFaceModule()
+        elif mode == 'arcface':
+            head_dict['arcface'] = ArcFaceLayer(
+                in_features=in_features,
+                out_features=out_features,
+            )
         self.head = Sequential(head_dict)
-        '''
-        self.cos_m = math.cos(m)
-        self.sin_m = math.sin(m)
 
     def forward(
             self,
             embeddings,
             labels,
         ):
-        d
+        return self.head(embeddings, labels)
 
 
 if __name__ == '__main__':
     model = Head()
     print(model)
-
