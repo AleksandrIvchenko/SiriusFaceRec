@@ -33,11 +33,11 @@ def inference_client(file):
     # Infer
     inputs = []
     outputs = []
-    inputs.append(grpcclient.InferInput('input__0', [1, 3, 640, 640], "FP32"))
+    inputs.append(grpcclient.InferInput('input__0', [3, 640, 640], "FP32"))
 
     # Initialize the data
     image_file = load_image(file)
-    image_file = image_file[np.newaxis, ...]
+    # image_file = image_file[np.newaxis, ...]
     inputs[0].set_data_from_numpy(image_file)
 
     outputs.append(grpcclient.InferRequestedOutput('output__0'))
