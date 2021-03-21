@@ -31,7 +31,7 @@ class DataArguments:
 class TrainArguments:
     max_epoch: int = 10
     new_size: Tuple[int, int] = (128, 128)
-    one_batch_overfit: int = 1
+    one_batch_overfit: int = 0
     save_period: int = 20
     scheduler_gamma: float = 0.5
     scheduler_step_size: int = 10

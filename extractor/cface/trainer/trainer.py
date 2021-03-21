@@ -95,6 +95,7 @@ class Trainer:
                             metric_name=f'train/{metric_name}',
                             metric_value=value,
                         )
+                        print(metric_name, value)
 
                 loss = info['loss']
                 loss.backward()
@@ -108,6 +109,7 @@ class Trainer:
             model.training_step_end(batch_idx=batch_idx)
 
             if self.one_batch_overfit:
+                print('Warning! One batch overfitting! To disable it, add --one_batch_overfit=0')
                 break
 
         model.training_epoch_end(epoch_idx=epoch_idx)
