@@ -6,4 +6,7 @@
 3) Docker compose https://docs.docker.com/compose/install/
 
 ### Запуск проекта:
-sudo docker-compose up --build
+`sudo docker-compose up --build`
+
+##### База данных лежит в `data\sqlite.db`. Обнуление базы данных:
+`sqlite3 sqlite.db < schema.sql`
