@@ -1,15 +1,16 @@
 from pathlib import Path
-from typing import Tuple
+from typing import List, Optional, Tuple
 
 import cv2
+import numpy as np
 import torch
 from albumentations import (
     Compose,
     HorizontalFlip,
     Normalize,
     Resize,
-    ToTensorV2,
 )
+from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader, Dataset
 from torchvision.datasets import CelebA
 
@@ -27,13 +28,13 @@ class CelebADataset(Dataset):
         ):
         images_path = root / 'celeba' / 'img_align_celeba'
         identity_path = root / 'celeba' / 'identity_CelebA.txt'
-        landmarks_path = root / 'celeba' / 'landmarks.txt'
+        landmarks_path = root / 'celeba' / 'list_landmarks_align_celeba.txt'
         identity_file = open(identity_path)
         landmarks_file = open(landmarks_path)
         landmarks_file.readline().split()
         landmarks_file.readline().split()
 
-        self.filenames = list(i for i in images_path.glob('*.jpg'))
+        self.filenames = list(p for p in images_path.glob('*.jpg'))
         n_images = len(self.filenames)
 
         self.labels = dict()
@@ -46,13 +47,13 @@ class CelebADataset(Dataset):
             info = landmarks_file.readline().split()
             filename = info.pop(0)
             info = list(map(int, info))
-            self.landmarks[filename] = [
+            self.landmarks[filename] = np.array([
                 [info[0], info[1]],
                 [info[2], info[3]],
                 [info[4], info[5]],
                 [info[6], info[7]],
                 [info[8], info[9]],
-            ]
+            ])
 
         self.transform = transform
 
@@ -61,19 +62,20 @@ class CelebADataset(Dataset):
 
     def __getitem__(self, idx):
         filename = self.filenames[idx]
-        label = self.labels[filename]
-        ldm = self.landmarks[filename]
-        image = cv2.imread(filename)
+        filename_2 = filename.name
+        label = self.labels[filename_2]
+        ldm = self.landmarks[filename_2]
+        image = cv2.imread(str(filename))
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        if self.transform:
-            image = self.transform(image)['image']
 
         image = LandmarksProcessor.cut_face(
             img=image,
             box=None,
             ldm=ldm,
         )
+
+        if self.transform:
+            image = self.transform(image=image)['image']
 
         return image, label
 
@@ -113,7 +115,7 @@ class CelebADataModule(BaseDataModule):
 
 if __name__ == '__main__':
     dm = CelebADataModule(
-        data_path='./data/celeba',
+        data_path=Path('./data/celeba'),
         batch_size=64,
         num_workers=4,
     )

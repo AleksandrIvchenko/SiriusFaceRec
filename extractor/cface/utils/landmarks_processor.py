@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 
 
 class LandmarksProcessor:
@@ -33,4 +34,4 @@ class LandmarksProcessor:
             (resize, resize),
         )
 
-    return face
+        return face
