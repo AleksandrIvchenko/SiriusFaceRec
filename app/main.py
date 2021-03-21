@@ -1,22 +1,11 @@
+import torch
 from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import PlainTextResponse
 
 from check_inference import check_inference, check_live
+from inference import parse_image
 
 app = FastAPI()
-
-
-async def parse_image(file):
-    try:
-        file_bytes = await file.read()
-        embedding = len(file_bytes)
-        user_id = file.filename
-        file.close()
-    except Exception as e:
-        print(e)
-        return 'Error parsing file'
-
-    return user_id, embedding
 
 
 @app.get('/')
