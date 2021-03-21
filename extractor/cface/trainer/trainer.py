@@ -95,7 +95,6 @@ class Trainer:
                             metric_name=f'train/{metric_name}',
                             metric_value=value,
                         )
-                        print(metric_name, value)
 
                 loss = info['loss']
                 loss.backward()

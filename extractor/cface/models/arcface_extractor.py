@@ -42,6 +42,13 @@ class ArcFaceExtractor(BaseModule):
         ):
         return self.extractor(x)
 
+    def predict(
+            self,
+            image,
+        ):
+        batch = torch.tensor(image)
+        return self.extractor(image)
+
     def training_step(
             self,
             batch,
