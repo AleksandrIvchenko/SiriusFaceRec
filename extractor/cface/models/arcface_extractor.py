@@ -59,10 +59,11 @@ class ArcFaceExtractor(BaseModule):
         images = images.to(self.device)
         labels = labels.to(self.device)
         embeddings = self.extractor(images)
-        angle = self.head(embeddings, labels)
+        outputs = self.head(embeddings, labels)
+        predictions = torch.max(outputs, dim=1)
 
-        loss = self.criterion(angle, labels)
-        accuracy = 0
+        loss = self.criterion(outputs, labels)
+        accuracy = (predicted == labels).sum().item() / len(batch)
 
         info = {
             'loss': loss,
