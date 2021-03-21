@@ -78,6 +78,9 @@ def cut_face(img, ldm, resize=256):
 
 
 if __name__ == '__main__':
+    print (cfg_re50)
+
+
     torch.set_grad_enabled(False)
     cfg = None
     if args.network == "mobile0.25":

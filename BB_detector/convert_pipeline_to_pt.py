@@ -31,6 +31,7 @@ parser.add_argument('--vis_thres', default=0.6, type=float, help='visualization_
 args = parser.parse_args()
 
 #Cutting face function
+#@torch.jit.script
 def cut_face(img, ldm, resize=256):
     dst = np.array([[38.2946, 51.6963],
                     [73.5318, 51.5014],
@@ -43,21 +44,29 @@ def cut_face(img, ldm, resize=256):
     return face
 
 
+#@torch.jit.script
 
-if __name__ == '__main__':
+@torch.jit.script
+def pipeline ():
+    confidence_threshold = 0.02
+    #top_k = 5000
+    nms_threshold = 0.4
+    keep_top_k = 750
+    save_image = True
+    vis_thres = 0.6
+
     torch.set_grad_enabled(False)
     cfg = cfg_re50
 
-    device = 'cuda' if torch.cuda.is_available() else 'gpu'
-    path = args.trained_model
-    #path = "./weights/FaceDetector.pt"
 
-    with open(path, 'rb') as f:
-        buffer = io.BytesIO(f.read())
+    #device = 'cuda' if torch.cuda.is_available() else 'gpu'
+    device = 'cuda'
+    #path = args.trained_model
+    #path = "./weights/FaceDetector.pt"
+    #f = open(path, 'rb')
 
     # Load all tensors onto GPU, using a device
-    buffer.seek(0)
-    net = torch.jit.load(buffer, map_location=torch.device(device))
+    net = torch.jit.load("FaceDetector.pt", map_location=torch.device(device))
     net.eval()
 
     print('Finished loading model!')
@@ -67,8 +76,8 @@ if __name__ == '__main__':
 
 
     # Input image processing
-    image_path = args.image_path
-    #image_path = "./curve/scar.jpeg"
+    #image_path = args.image_path
+    image_path = "./curve/scar.jpeg"
     #for i in range(100):
 
     img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
@@ -104,7 +113,7 @@ if __name__ == '__main__':
     landms = landms.cpu().numpy()
 
     # ignore low scores
-    inds = np.where(scores > args.confidence_threshold)[0]
+    inds = np.where(scores > confidence_threshold)[0]
     boxes = boxes[inds]
     landms = landms[inds]
     scores = scores[inds]
@@ -117,23 +126,23 @@ if __name__ == '__main__':
 
     # do NMS
     dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
-    keep = py_cpu_nms(dets, args.nms_threshold)
+    keep = py_cpu_nms(dets, nms_threshold)
     # keep = nms(dets, args.nms_threshold,force_cpu=args.cpu)
     dets = dets[keep, :]
     landms = landms[keep]
 
     # keep top-K faster NMS
-    dets = dets[:args.keep_top_k, :]
-    landms = landms[:args.keep_top_k, :]
+    dets = dets[:keep_top_k, :]
+    landms = landms[:keep_top_k, :]
 
     dets = np.concatenate((dets, landms), axis=1)
 
     #end of for i in range (100)
 
     # show image
-    if args.save_image:
+    if save_image:
         for b in dets:
-            if b[4] < args.vis_thres:
+            if b[4] < vis_thres:
                 continue
             text = "{:.4f}".format(b[4])
             b = list(map(int, b))
@@ -167,13 +176,11 @@ if __name__ == '__main__':
                         [b[13], b[14]]
                     ], dtype=np.float32)
 
-    #print("landmarks)", (landmarks.shape))
-
     face = cut_face(img = img_raw, ldm = landmarks, resize=256)
     name_rect_affin = 'rect_affin.jpg'
     cv2.imwrite(name_rect_affin, face)
 
-    #cv2.imwrite(name_rect, img_raw[b[0]:b[1], b[2]:b[3]])
+    #cv2.imwrite(name_rect, img_raw[b[0]:b[1], b[2]:b[3]]) #Bounding_Box
 
     # Save landmarks to txt
     file_name = image_path.split('/')[-1]
@@ -186,5 +193,27 @@ if __name__ == '__main__':
 
     print(landmarks_str)
 
+if __name__ == '__main__':
+    pipeline()
 
+
+
+    #traced = torch.jit.trace(pipeline(), image_path_test)
+
+    #traced = torch.jit.script (pipeline())
+
+    #output_pt = 'Image_and_landmarks_generator.pt'
+
+    # Save to file
+    #torch.jit.save(m, 'scriptmodule.pt')
+
+    #inputs = torch.randn(1, 3, args.long_side, args.long_side).to(device)
+
+    # Use torch.jit.trace to generate a torch.jit.ScriptModule via tracing.
+    #traced_script_module = torch.jit.trace(net, inputs)
+
+    # Save the TorchScript model
+    #traced_script_module.save(output_pt)
+
+    #print("Exported to PT")
 
