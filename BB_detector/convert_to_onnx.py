@@ -22,6 +22,8 @@ parser.add_argument('--cpu', action="store_true", default=True, help='Use cpu in
 
 args = parser.parse_args()
 
+print ("ARGS", args)
+
 
 def check_keys(model, pretrained_state_dict):
     ckpt_keys = set(pretrained_state_dict.keys())
@@ -64,27 +66,38 @@ if __name__ == '__main__':
     cfg = None
     if args.network == "mobile0.25":
         cfg = cfg_mnet
+        print ("mobile0.25")
     elif args.network == "resnet50":
         cfg = cfg_re50
+        print("resnet50")
     # net and model
     net = RetinaFace(cfg=cfg, phase = 'test')
     net = load_model(net, args.trained_model, args.cpu)
     net.eval()
     print('Finished loading model!')
-    print(net)
+    #print(net)
     device = torch.device("cpu" if args.cpu else "cuda")
     net = net.to(device)
 
-    print ("args", args)
 
     # ------------------------ export -----------------------------
     output_onnx = 'FaceDetector.onnx'
-    print("==> Exporting model to ONNX format at '{}'".format(output_onnx))
-    input_names = ["input0"]
-    output_names = ["output0"]
+    #print("==> Exporting model to ONNX format at '{}'".format(output_onnx))
+    #input_names = ["input0"]
+    #output_names = ["output0"]
     inputs = torch.randn(1, 3, args.long_side, args.long_side).to(device)
 
-    torch_out = torch.onnx._export(net, inputs, output_onnx, export_params=True, verbose=False,
-                                   input_names=input_names, output_names=output_names)
+    #torch_out = torch.onnx._export(net, inputs, output_onnx, export_params=True, verbose=False,
+    #                               input_names=input_names, output_names=output_names)
+
+    output_pt = 'FaceDetector.pt'
+
+    # Use torch.jit.trace to generate a torch.jit.ScriptModule via tracing.
+    traced_script_module = torch.jit.trace(net, inputs)
+
+    # Save the TorchScript model
+    traced_script_module.save(output_pt)
+
+    print ("Exported to PT")
 
 

@@ -66,6 +66,7 @@ if __name__ == '__main__':
         cfg = cfg_mnet
     elif args.network == "resnet50":
         cfg = cfg_re50
+        print("resnet50")
     # net and model
     net = RetinaFace(cfg=cfg, phase = 'test')
     net = load_model(net, args.trained_model, args.cpu)
@@ -78,6 +79,19 @@ if __name__ == '__main__':
 
     net = net.to(device)
 
+    # ------------------------ export -----------------------------
+    #$ python3 convert_to_py.py - -network resnet50 - -trained_model./weights/Resnet50_Final.pth
+
+    output_pt = 'FaceDetector.pt'
+    inputs = torch.randn(1, 3, args.long_side, args.long_side).to(device)
+    # Use torch.jit.trace to generate a torch.jit.ScriptModule via tracing.
+    traced_script_module = torch.jit.trace(net, inputs)
+
+    # Save the TorchScript model
+    traced_script_module.save(output_pt)
+
+    print("Exported to PT")
+
 """
     # ------------------------ export -----------------------------
     output_onnx = 'FaceDetector.onnx'
@@ -88,14 +102,4 @@ if __name__ == '__main__':
 
     torch_out = torch.onnx._export(net, inputs, output_onnx, export_params=True, verbose=False,
                                    input_names=input_names, output_names=output_names)
-"""
-"""
-    #output_pt = 'FaceDetector.pt'
-
-    # Use torch.jit.trace to generate a torch.jit.ScriptModule via tracing.
-    traced_script_module = torch.jit.trace(model, example)
-    
-    # Save the TorchScript model
-    traced_script_module.save("traced_resnet_model.pt")
-    
 """

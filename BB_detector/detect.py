@@ -84,12 +84,16 @@ if __name__ == '__main__':
         cfg = cfg_mnet
     elif args.network == "resnet50":
         cfg = cfg_re50
+        print ("resnet50")
     # net and model
     net = RetinaFace(cfg=cfg, phase = 'test')
+    if(args.cpu) : print ("CPU")
+    else: print ("GPU")
+
     net = load_model(net, args.trained_model, args.cpu)
     net.eval()
     print('Finished loading model!')
-    print(net)
+    #print(net)
     cudnn.benchmark = True
     device = torch.device("cpu" if args.cpu else "cuda")
     net = net.to(device)
@@ -224,3 +228,4 @@ if __name__ == '__main__':
     text_file.close()
 
     print(landmarks_str)
+
