@@ -1,12 +1,14 @@
 import sys
 
-import numpy as np
 import tritonclient.grpc as grpcclient
-from PIL import Image
 
 from const import URL, CLIENT_TIMEOUT
+
 from utils import extractor_preprocessing
 from crop_and_landmarks import pipeline
+
+from utils import extractor_preprocessing, load_image, detector_postprocessing
+
 
 
 def get_triton_client() -> grpcclient.InferenceServerClient:
@@ -18,19 +20,7 @@ def get_triton_client() -> grpcclient.InferenceServerClient:
     return triton_client
 
 
-def load_image(file):
-    img = Image.open(file)
-    img.load()
-    img = img.convert('RGB')
-    resized_img = img.resize((640, 640), Image.BILINEAR)
-    resized_img = np.array(resized_img)
-    resized_img = resized_img.astype(np.float32)
-    resized_img = np.transpose(resized_img, (2, 0, 1))
-    resized_img = resized_img[np.newaxis, ...]
-    return resized_img
-
-
-def detector(image_file):
+def detector(image_array):
     triton_client = get_triton_client()
     model_name = "facedetector"
 
@@ -41,7 +31,7 @@ def detector(image_file):
 
     # Initialize the data
 
-    inputs[0].set_data_from_numpy(image_file)
+    inputs[0].set_data_from_numpy(image_array)
 
     outputs.append(grpcclient.InferRequestedOutput('output__0'))
     outputs.append(grpcclient.InferRequestedOutput('output__1'))
@@ -92,7 +82,7 @@ def detector_postprocessing(output0_data, output1_data, output2_data, raw_image)
 
 def extractor(image):
     triton_client = get_triton_client()
-    model_name = "featureextractor"
+    model_name = "extractor"
 
     # Infer
     inputs = []
