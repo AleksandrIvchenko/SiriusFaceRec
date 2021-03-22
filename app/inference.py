@@ -5,6 +5,7 @@ import tritonclient.grpc as grpcclient
 from PIL import Image
 
 from const import URL, CLIENT_TIMEOUT
+from utils import extractor_preprocessing
 
 
 def get_triton_client() -> grpcclient.InferenceServerClient:
@@ -94,7 +95,14 @@ def extractor(image):
 def get_embedding(file):
     image_array = load_image(file.file)
     o1, o2, o3 = detector(image_array)
-    embedding = extractor(o1)
+    image, landmarks = detector_postprocessing(o1, o2, o3, image_array)
+    image = extractor_preprocessing(
+        img=image,
+        ldm=landmarks,
+        resize=128,
+    )
+    embedding = extractor(image)
+
     return embedding
 
 
