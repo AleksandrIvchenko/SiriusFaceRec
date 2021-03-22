@@ -84,7 +84,7 @@ class CelebADataModule(BaseDataModule):
     def setup(
             self,
             val_ratio: float = 0.1,
-            new_size: Tuple[int, int] = (256, 256),
+            new_size: Tuple[int, int] = (128, 128),
             download: bool = False,
         ):
         data_transforms = Compose([

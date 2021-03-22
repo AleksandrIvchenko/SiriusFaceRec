@@ -21,7 +21,9 @@ def main(args):
     model = ArcFaceExtractor(
         n_classes=args.n_classes,
         learning_rate=args.learning_rate,
+        momentum=args.momentum,
         verbose=args.verbose,
+        weight_decay=args.weight_decay,
         device=args.device,
     ).to(args.device)
 
