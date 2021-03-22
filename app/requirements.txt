@@ -28,3 +28,4 @@ Jinja2==2.11.3
 sqlalchemy==1.4.2
 Pillow
 aiofiles==0.6.0
+opencv-python==4.5.1.48

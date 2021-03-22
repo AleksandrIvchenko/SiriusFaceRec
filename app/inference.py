@@ -1,11 +1,9 @@
 import sys
 
-import numpy as np
 import tritonclient.grpc as grpcclient
-from PIL import Image
 
 from const import URL, CLIENT_TIMEOUT
-from utils import extractor_preprocessing
+from utils import extractor_preprocessing, load_image, detector_postprocessing
 
 
 def get_triton_client() -> grpcclient.InferenceServerClient:
@@ -15,42 +13,6 @@ def get_triton_client() -> grpcclient.InferenceServerClient:
         print("channel creation failed: " + str(e))
         sys.exit()
     return triton_client
-
-
-def expand2square(pil_img, background_color):
-    width, height = pil_img.size
-    if width == height:
-        return pil_img
-    elif width > height:
-        result = Image.new(pil_img.mode, (width, width), background_color)
-        result.paste(pil_img, (0, (width - height) // 2))
-        return result
-    else:
-        result = Image.new(pil_img.mode, (height, height), background_color)
-        result.paste(pil_img, ((height - width) // 2, 0))
-        return result
-
-
-def load_image(file):
-    mean = np.array([0.485, 0.456, 0.406])
-    std = np.array([0.229, 0.224, 0.225])
-    size = 640, 640
-    img = Image.open(file)
-    img.load()
-    img = img.convert('RGB')
-    img = expand2square(img, (0, 0, 0))
-    img.thumbnail(size, Image.ANTIALIAS)
-    image_array = np.float32(img)
-    image_array = (image_array - mean) / (std + sys.float_info.epsilon)
-    image_array = np.transpose(image_array, (2, 0, 1))
-    image_array = image_array[np.newaxis, ...]
-    image_array = image_array.astype(np.float32)
-    # resized_img = img.resize((640, 640), Image.BILINEAR)
-    # resized_img = np.array(resized_img)
-    # resized_img = resized_img.astype(np.float32)
-    # resized_img = np.transpose(resized_img, (2, 0, 1))
-    # resized_img = resized_img[np.newaxis, ...]
-    return image_array
 
 
 def detector(image_array):
