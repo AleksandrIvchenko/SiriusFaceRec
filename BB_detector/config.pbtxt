@@ -1,16 +1,27 @@
+  name: "facedetector"
   platform: "pytorch_libtorch"
-  max_batch_size: 24
+  max_batch_size: 8
   input [
     {
-      name: "input0"
+      name: "input__0"
       data_type: TYPE_FP32
-      dims: [ 840, 840, 3  ]
+      dims: [ 3, 640, 640 ]
     }
   ]
   output [
     {
-      name: "output0"
+      name: "output__0"
       data_type: TYPE_FP32
-      dims: [ 256, 256, 3 ]
-    }
+      dims: [ 16800, 4 ]
+    },
+    {
+      name: "output__1"
+      data_type: TYPE_FP32
+      dims: [ 16800, 2 ]
+    },
+    {
+      name: "output__2"
+      data_type: TYPE_FP32
+      dims: [ 16800, 10 ]
+    },
   ]

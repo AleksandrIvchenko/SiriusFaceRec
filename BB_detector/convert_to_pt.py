@@ -80,10 +80,24 @@ if __name__ == '__main__':
     net = net.to(device)
 
     # ------------------------ export -----------------------------
-    #$ python3 convert_to_py.py - -network resnet50 - -trained_model./weights/Resnet50_Final.pth
+    #$ python3 convert_to_py.py - -network resnet50 --trained_model ./weights/Resnet50_Final.pth
 
     output_pt = 'FaceDetector.pt'
     inputs = torch.randn(1, 3, args.long_side, args.long_side).to(device)
+    print ("args.long_side", args.long_side)
+
+    loc, conf, landms = net(inputs)
+
+    print(inputs.shape)
+    print(inputs.dtype)
+
+    print((loc.shape))
+    print(loc.dtype)
+    print((conf.shape))
+    print(conf.dtype)
+    print((landms.shape))
+    print(landms.dtype)
+
     # Use torch.jit.trace to generate a torch.jit.ScriptModule via tracing.
     traced_script_module = torch.jit.trace(net, inputs)
 

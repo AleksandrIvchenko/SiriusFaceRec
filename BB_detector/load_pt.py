@@ -73,7 +73,16 @@ if __name__ == '__main__':
 
     img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
+    print("image", type(img_raw))
+    print("image", img_raw.shape)
+
     img = np.float32(img_raw)
+
+    #print("image", img)
+    print("image", type(img))
+    print("image", img.shape)
+
+    #cv2.imwrite("INPUT", img)
 
     im_height, im_width, _ = img.shape
     scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
@@ -84,6 +93,12 @@ if __name__ == '__main__':
     scale = scale.to(device)
 
     tic = time.time()
+
+    #print ("image", img)
+    print("image", type(img))
+    print ("image", img.shape)
+
+
     loc, conf, landms = net(img)  # forward pass
     print('net forward time: {:.4f}'.format(time.time() - tic))
 
