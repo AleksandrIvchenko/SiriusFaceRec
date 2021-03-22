@@ -7,7 +7,13 @@ def extractor_preprocessing(
         ldm,
         resize: int = 128,
     ):
-    src = ldm
+    src = np.array([
+        [ldm[0], ldm[1]],
+        [ldm[2], ldm[3]],
+        [ldm[4], ldm[5]],
+        [ldm[6], ldm[7]],
+        [ldm[8], ldm[9]],
+    ])
     dst = np.array(
         [
             [38.2946, 51.6963],
