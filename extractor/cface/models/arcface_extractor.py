@@ -1,6 +1,7 @@
 import torch
 from torch.nn import CrossEntropyLoss
-from torch.optim import Adam
+from torch.optim import SGD
+from torch.optim.lr_scheduler import LambdaLR
 
 from cface.models import BaseModule
 from cface.models.components import Extractor, Head
@@ -16,12 +17,16 @@ class ArcFaceExtractor(BaseModule):
             n_hiddens: int = 512,
             n_classes: int = 10,
             device: torch.device = torch.device('cpu'),
-            learning_rate: float = 3e-4,
+            learning_rate: float = 0.1,
+            momentum: float = 0.9,
+            weight_decay: float = 5e-4,
             verbose: bool = True,
         ):
         super().__init__()
         self.device = device
         self.learning_rate = learning_rate
+        self.momentum = momentum
+        self.weight_decay = weight_decay
         self.verbose = verbose
 
         self.extractor = Extractor(
@@ -63,7 +68,7 @@ class ArcFaceExtractor(BaseModule):
         predictions = torch.max(outputs, dim=1)
 
         loss = self.criterion(outputs, labels)
-        accuracy = (predicted == labels).sum().item() / len(batch)
+        accuracy = 0#(predictions == labels).sum().item() / len(batch)
 
         info = {
             'loss': loss,
@@ -88,12 +93,24 @@ class ArcFaceExtractor(BaseModule):
     def configure_optimizers(
             self,
         ):
-        optimizer = Adam(
+        optimizer = SGD(
             params=self.parameters(),
             lr=self.learning_rate,
+            momentum=self.momentum,
+            weight_decay=self.weight_decay,
         )
 
-        return [optimizer], []
+        def lr_step_func(epoch):
+            if epoch < -1:
+                return ((epoch + 1) / 5) ** 2
+            else:
+                return 0.1 ** len([m for m in [8, 14] if m - 1 <= epoch])
+        scheduler = LambdaLR(
+            optimizer=optimizer,
+            lr_lambda=lr_step_func,
+        ) 
+
+        return [optimizer], [scheduler]
 
 
 if __name__ == '__main__':
