@@ -71,7 +71,7 @@ def extractor(o1, o2, o3):
     # Infer
     inputs = []
     outputs = []
-    inputs.append(grpcclient.InferInput('input__0', [1, 3, 640, 640], "FP32"))
+    inputs.append(grpcclient.InferInput('input__0', [1, 3, 128, 128], "FP32"))
 
     # Initialize the data
     inputs[0].set_data_from_numpy(o1)
