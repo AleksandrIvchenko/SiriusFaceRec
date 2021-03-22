@@ -4,7 +4,7 @@ from cface.models import ArcFaceExtractor
 
 
 if __name__ == '__main__':
-    device = torch.device('cuda')
+    device = torch.device('cpu')
     net = ArcFaceExtractor()
     output_pt = 'FeatureExtractor.pt'
     inputs = torch.randn(1, 3, 128, 128).to(device)

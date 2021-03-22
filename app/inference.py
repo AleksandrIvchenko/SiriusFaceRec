@@ -64,7 +64,7 @@ def detector(image_file):
     return output0_data, output1_data, output2_data
 
 
-def extractor(o1, o2, o3):
+def extractor(image, keypoints):
     triton_client = get_triton_client()
     model_name = "extractor"
 
@@ -74,7 +74,7 @@ def extractor(o1, o2, o3):
     inputs.append(grpcclient.InferInput('input__0', [1, 3, 128, 128], "FP32"))
 
     # Initialize the data
-    inputs[0].set_data_from_numpy(o1)
+    inputs[0].set_data_from_numpy(image)
 
     outputs.append(grpcclient.InferRequestedOutput('output__0'))
 
