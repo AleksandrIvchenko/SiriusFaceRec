@@ -20,7 +20,7 @@ def load_image(filename):
 
 def inference_client(file):
     try:
-        triton_client = grpcclient.InferenceServerClient(url=URL, verbose=True)
+        triton_client = grpcclient.InferenceServerClient(url=URL, verbose=False)
     except Exception as e:
         print("channel creation failed: " + str(e))
         sys.exit()

@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI, File, Form, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Request, UploadFile, Body
 from fastapi.responses import PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -60,9 +60,17 @@ def inference_photo(request: Request, file: UploadFile = File(...), db: Session 
 
 
 @app.post('/parse/', response_class=PlainTextResponse)
-async def create_upload_file(file: UploadFile = File(...)):
+async def inference_photo_api(file: UploadFile = File(...)):
     result = get_embedding(file)
     return f'{result}'
+
+
+@app.post('/add/', response_class=PlainTextResponse)
+async def create_user_api(name: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db)):
+    emb = get_embedding(file)
+    crud.create_user(db=db, name=name, emb=emb, filename='from_telegram')
+    message = f'Создан пользователь {name}'
+    return message
 
 
 @app.get('/is_live/')
