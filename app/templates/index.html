@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Main page</title>
+</head>
+<body>
+<h3>Sirius ML Face Recognition</h3>
+
+<p>Загрузить в базу нового пользователя</p>
+<form action="/users/" method="post" enctype="multipart/form-data">
+    Введите имя:<br>
+    <input type="text" name="name"><br>
+    Выбрать фотографию:<br>
+    <input type="file" name="file"><br><br>
+    <button type="submit">Загрузить</button>
+</form>
+<br><br>
+
+<p>Проверить пользователя в базе</p>
+<form action="/parse/" method="post" enctype="multipart/form-data">
+    Выбрать фотографию:<br>
+    <input type="file" name="file"><br><br>
+    <button type="submit">Загрузить</button>
+</form>
+<br><br>
+
+<p><a href="/users/">Список пользователей</a></p>
+
+</body>
+</html>

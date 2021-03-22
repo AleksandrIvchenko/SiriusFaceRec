@@ -1,6 +1,6 @@
 name: "facedetector"
 platform: "pytorch_libtorch"
-max_batch_size: 0
+max_batch_size: 8
 input [
   {
     name: "input__0"
