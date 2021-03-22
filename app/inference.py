@@ -16,19 +16,43 @@ def get_triton_client() -> grpcclient.InferenceServerClient:
     return triton_client
 
 
+def expand2square(pil_img, background_color):
+    width, height = pil_img.size
+    if width == height:
+        return pil_img
+    elif width > height:
+        result = Image.new(pil_img.mode, (width, width), background_color)
+        result.paste(pil_img, (0, (width - height) // 2))
+        return result
+    else:
+        result = Image.new(pil_img.mode, (height, height), background_color)
+        result.paste(pil_img, ((height - width) // 2, 0))
+        return result
+
+
 def load_image(file):
+    mean = np.array([0.485, 0.456, 0.406])
+    std = np.array([0.229, 0.224, 0.225])
+    size = 640, 640
     img = Image.open(file)
     img.load()
     img = img.convert('RGB')
-    resized_img = img.resize((640, 640), Image.BILINEAR)
-    resized_img = np.array(resized_img)
-    resized_img = resized_img.astype(np.float32)
-    resized_img = np.transpose(resized_img, (2, 0, 1))
-    resized_img = resized_img[np.newaxis, ...]
-    return resized_img
+    img = expand2square(img, (0, 0, 0))
+    img.thumbnail(size, Image.ANTIALIAS)
+    image_array = np.float32(img)
+    image_array = (image_array - mean) / (std + sys.float_info.epsilon)
+    image_array = np.transpose(image_array, (2, 0, 1))
+    image_array = image_array[np.newaxis, ...]
+    image_array = image_array.astype(np.float32)
+    # resized_img = img.resize((640, 640), Image.BILINEAR)
+    # resized_img = np.array(resized_img)
+    # resized_img = resized_img.astype(np.float32)
+    # resized_img = np.transpose(resized_img, (2, 0, 1))
+    # resized_img = resized_img[np.newaxis, ...]
+    return image_array
 
 
-def detector(image_file):
+def detector(image_array):
     triton_client = get_triton_client()
     model_name = "facedetector"
 
@@ -39,7 +63,7 @@ def detector(image_file):
 
     # Initialize the data
 
-    inputs[0].set_data_from_numpy(image_file)
+    inputs[0].set_data_from_numpy(image_array)
 
     outputs.append(grpcclient.InferRequestedOutput('output__0'))
     outputs.append(grpcclient.InferRequestedOutput('output__1'))
@@ -66,7 +90,7 @@ def detector(image_file):
 
 def extractor(image):
     triton_client = get_triton_client()
-    model_name = "featureextractor"
+    model_name = "extractor"
 
     # Infer
     inputs = []
