@@ -64,9 +64,9 @@ def detector(image_file):
     return output0_data, output1_data, output2_data
 
 
-def extractor(image, keypoints):
+def extractor(image):
     triton_client = get_triton_client()
-    model_name = "extractor"
+    model_name = "featureextractor"
 
     # Infer
     inputs = []
@@ -94,7 +94,7 @@ def extractor(image, keypoints):
 def get_embedding(file):
     image_array = load_image(file.file)
     o1, o2, o3 = detector(image_array)
-    embedding = extractor(o1, o2, o3)
+    embedding = extractor(o1)
     return embedding
 
 
