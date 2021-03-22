@@ -19,14 +19,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 URL_PARSE = 'http://web/parse/'
+URL_ADD = 'http://web/add/'
 TOKEN = '1763937310:AAHFmqPqQADl4Qimq3klBnrHm3WF1aDSHUs'
-PHOTO = 1
+CHOOSING, PHOTO, ADD_PHOTO, ADD_FINISH = range(4)
+_REPLY_KEYBOARD = [['Определить человека', 'Добавить человека']]
 
 
 def start(update: Update, _: CallbackContext) -> int:
     update.message.reply_text(
-        'Добро пожаловать! Загрузите фотографию',
+        'Добро пожаловать! Выберите действие',
+        reply_markup=ReplyKeyboardMarkup(_REPLY_KEYBOARD, one_time_keyboard=True),
     )
+    return CHOOSING
+
+
+def recognize_choice(update: Update, _: CallbackContext) -> int:
+    update.message.reply_text(f'Загрузите фотографию')
     return PHOTO
 
 
@@ -42,9 +50,32 @@ def photo(update: Update, _: CallbackContext) -> int:
     )
     # update.message.reply_photo(open('user_photo.jpg', 'rb'))
     update.message.reply_text(
-        'Можете загрузить еще одну.',
+        'Выберите дальнейшее действие',
+        reply_markup=ReplyKeyboardMarkup(_REPLY_KEYBOARD, one_time_keyboard=True),
     )
-    return PHOTO
+    return CHOOSING
+
+
+def add_choice(update: Update, _: CallbackContext) -> int:
+    update.message.reply_text(f'Загрузите фотографию человека')
+    return ADD_PHOTO
+
+
+def add_photo(update: Update, context: CallbackContext) -> int:
+    context.user_data['photo_file'] = update.message.photo[-1].get_file()
+    update.message.reply_text(f'Введите имя человека')
+    return ADD_FINISH
+
+
+def add_finish(update: Update, context: CallbackContext) -> int:
+    name = update.message.text
+    files = {'file': context.user_data['photo_file'].download_as_bytearray()}
+    requests.post(URL_ADD, files=files, data={'name': name})
+    update.message.reply_text(
+        'Фотография загружена. Выберите дальнейшее действие',
+        reply_markup=ReplyKeyboardMarkup(_REPLY_KEYBOARD, one_time_keyboard=True),
+    )
+    return CHOOSING
 
 
 def cancel(update: Update, _: CallbackContext) -> int:
@@ -53,7 +84,6 @@ def cancel(update: Update, _: CallbackContext) -> int:
     update.message.reply_text(
         'Спасибо, до встречи!', reply_markup=ReplyKeyboardRemove()
     )
-
     return ConversationHandler.END
 
 
@@ -68,7 +98,13 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
+            CHOOSING: [
+                MessageHandler(Filters.regex('^Определить человека$'), recognize_choice),
+                MessageHandler(Filters.regex('^Добавить человека$'), add_choice),
+            ],
             PHOTO: [MessageHandler(Filters.photo, photo)],
+            ADD_PHOTO: [MessageHandler(Filters.photo, add_photo)],
+            ADD_FINISH: [MessageHandler(Filters.text, add_finish)],
         },
         fallbacks=[CommandHandler('cancel', cancel)],
     )
