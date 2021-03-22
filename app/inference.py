@@ -5,6 +5,8 @@ import tritonclient.grpc as grpcclient
 from PIL import Image
 
 from const import URL, CLIENT_TIMEOUT
+from utils import extractor_preprocessing
+from crop_and_landmarks import pipeline
 
 
 def get_triton_client() -> grpcclient.InferenceServerClient:
@@ -63,6 +65,30 @@ def detector(image_file):
     print(output2_data.shape)
     return output0_data, output1_data, output2_data
 
+def detector_postprocessing(output0_data, output1_data, output2_data, raw_image):
+    device = 'cuda'
+    net = torch.jit.load("./weights/FaceDetector.pt", map_location=torch.device(device))
+    net.eval()
+    """
+    image_path = "./curve/scar.jpeg"
+    img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    img = np.float32(img_raw)
+    im_height, im_width, _ = img.shape
+    scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
+    img -= (104, 117, 123)
+    img = img.transpose(2, 0, 1)
+    img = torch.from_numpy(img).unsqueeze(0)
+    img = img.to(device)
+    scale = scale.to(device)
+    """
+    loc, conf, landms = output0_data, output1_data, output2_data #net(img)  # forward pass
+
+    #image, landmarks = pipeline(img_raw, loc, conf, landms)
+    image, landmarks = pipeline(raw_image, loc, conf, landms)
+
+    return image, landmarks
+
+
 
 def extractor(image):
     triton_client = get_triton_client()
@@ -94,7 +120,14 @@ def extractor(image):
 def get_embedding(file):
     image_array = load_image(file.file)
     o1, o2, o3 = detector(image_array)
-    embedding = extractor(o1)
+    image, landmarks = detector_postprocessing(o1, o2, o3, image_array)
+    image = extractor_preprocessing(
+        img=image,
+        ldm=landmarks,
+        resize=128,
+    )
+    embedding = extractor(image)
+
     return embedding
 
 
