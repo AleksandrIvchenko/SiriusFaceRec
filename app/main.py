@@ -1,5 +1,6 @@
 from fastapi import Depends, FastAPI, File, Form, Request, UploadFile, Body
 from fastapi.responses import PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -12,6 +13,8 @@ from inference import get_embedding, get_user_by_photo
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 templates = Jinja2Templates(directory="templates")
 
