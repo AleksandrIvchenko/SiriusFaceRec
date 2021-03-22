@@ -5,7 +5,9 @@
     <title>Main page</title>
 </head>
 <body>
-<h3>Sirius ML Face Recognition</h3>
+<h2>Sirius ML Face Recognition</h2>
+
+<b>{{ message }}</b>
 
 <p>Загрузить в базу нового пользователя</p>
 <form action="/users/" method="post" enctype="multipart/form-data">
@@ -18,7 +20,7 @@
 <br><br>
 
 <p>Проверить пользователя в базе</p>
-<form action="/parse/" method="post" enctype="multipart/form-data">
+<form action="/inference_photo/" method="post" enctype="multipart/form-data">
     Выбрать фотографию:<br>
     <input type="file" name="file"><br><br>
     <button type="submit">Загрузить</button>
