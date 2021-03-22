@@ -3,20 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <title>Main page</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
 </head>
 <body>
-<h3>{{ message }}</h3>
-
-
+<h3>Sirius ML Face Recognition</h3>
 
 <p>Загрузить в базу нового пользователя</p>
-
-<form action="/upload_user/" method="post" enctype="multipart/form-data">
+<form action="/users/" method="post" enctype="multipart/form-data">
     Введите имя:<br>
     <input type="text" name="name"><br>
     Выбрать фотографию:<br>
-    <input type="file" name="book_file"><br><br>
+    <input type="file" name="file"><br><br>
     <button type="submit">Загрузить</button>
 </form>
 <br><br>
@@ -30,7 +26,6 @@
 <br><br>
 
 <p><a href="/users/">Список пользователей</a></p>
-
 
 </body>
 </html>

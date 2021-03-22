@@ -33,33 +33,35 @@ def inference_client(file):
     # Infer
     inputs = []
     outputs = []
-    inputs.append(grpcclient.InferInput('input__0', [3, 640, 640], "FP32"))
+    inputs.append(grpcclient.InferInput('input__0', [1, 3, 640, 640], "FP32"))
 
     # Initialize the data
     image_file = load_image(file)
-    # image_file = image_file[np.newaxis, ...]
+    image_file = image_file[np.newaxis, ...]
     inputs[0].set_data_from_numpy(image_file)
 
     outputs.append(grpcclient.InferRequestedOutput('output__0'))
+    outputs.append(grpcclient.InferRequestedOutput('output__1'))
+    outputs.append(grpcclient.InferRequestedOutput('output__2'))
 
     # Test with outputs
-    results = triton_client.infer(model_name=model_name,
-                                  inputs=inputs,
-                                  outputs=outputs,
-                                  client_timeout=CLIENT_TIMEOUT,
-                                  headers={'test': '1'})
-
-    statistics = triton_client.get_inference_statistics(model_name=model_name)
-    print(statistics)
-    if len(statistics.model_stats) != 1:
-        print("FAILED: Inference Statistics")
-        sys.exit(1)
+    results = triton_client.infer(
+        model_name=model_name,
+        inputs=inputs,
+        outputs=outputs,
+        client_timeout=CLIENT_TIMEOUT,
+        headers={'test': '1'},
+    )
 
     # Get the output arrays from the results
     output0_data = results.as_numpy('output__0')
+    output1_data = results.as_numpy('output__1')
+    output2_data = results.as_numpy('output__2')
 
-    # print(output0_data)
-    return output0_data
+    print(output0_data.shape)
+    print(output1_data.shape)
+    print(output2_data.shape)
+    return f'{output0_data.shape}, {output1_data.shape}, {output2_data.shape}'
 
 
 async def parse_image(file):
@@ -68,7 +70,7 @@ async def parse_image(file):
         # embedding = len(file_bytes)
         user_id = file.filename
         embedding = inference_client(file.file)
-        file.close()
+        # file.close()
     except Exception as e:
         print(e)
         return 'Error parsing file'
