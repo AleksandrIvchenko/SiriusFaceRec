@@ -20,10 +20,7 @@ def load_image(filename):
 
 def inference_client(file):
     try:
-        triton_client = grpcclient.InferenceServerClient(
-            url=URL,
-            verbose=True,
-        )
+        triton_client = grpcclient.InferenceServerClient(url=URL, verbose=True)
     except Exception as e:
         print("channel creation failed: " + str(e))
         sys.exit()
@@ -44,7 +41,6 @@ def inference_client(file):
     outputs.append(grpcclient.InferRequestedOutput('output__1'))
     outputs.append(grpcclient.InferRequestedOutput('output__2'))
 
-    # Test with outputs
     results = triton_client.infer(
         model_name=model_name,
         inputs=inputs,
@@ -64,15 +60,11 @@ def inference_client(file):
     return f'{output0_data.shape}, {output1_data.shape}, {output2_data.shape}'
 
 
-async def parse_image(file):
-    try:
-        # file_bytes = await file.read()
-        # embedding = len(file_bytes)
-        user_id = file.filename
-        embedding = inference_client(file.file)
-        # file.close()
-    except Exception as e:
-        print(e)
-        return 'Error parsing file'
+def get_embedding(file):
+    embedding = inference_client(file.file)
+    return embedding
 
-    return user_id, embedding
+
+def get_user_by_photo(file, users):
+    pass
+    return users[0]

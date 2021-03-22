@@ -6,17 +6,17 @@
 </head>
 <body>
 <h3>Sirius ML Face Recognition</h3>
-
+<br>
 <h4>Список пользователей</h4>
-
-<ol>
+<table>
+<tr>
+    <td style="width:10%"><b>Имя</b></td>
+    <td style="width:10%"><b>Embedding</b></td>
+    <td style="width:10%"><b>Файл</b></td>
+</tr>
     {% for user in users %}
-        <li>
-            {% for field, value in user.get_fields %}
-                {{ field }} : {{ value }}
-            {% endfor %}
-        </li>
+        <tr><td>{{ user.name }}</td><td>{{ user.emb }}</td><td>{{ user.filename }}</td></tr>
     {% endfor %}
-</ol>
+</table>
 </body>
 </html>

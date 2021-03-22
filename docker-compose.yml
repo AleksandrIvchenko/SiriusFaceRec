@@ -16,8 +16,8 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./data/sqlite.db:/sqlite.db
+      - ./data/sqlite.db:/app/sqlite.db
     runtime: nvidia
-#  telegram:
-#    build: telegram
-#    runtime: nvidia
+  telegram:
+    build: telegram
+    runtime: nvidia

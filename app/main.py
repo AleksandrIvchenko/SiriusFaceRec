@@ -1,14 +1,13 @@
-from typing import List
-
-from fastapi import Depends, FastAPI, File, Form,  Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import PlainTextResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-import crud, models, schemas
-from database import SessionLocal, engine
+import crud
+import models
 from check_inference import check_inference, check_live
-from inference import parse_image
+from database import SessionLocal, engine
+from inference import get_embedding, get_user_by_photo
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -26,14 +25,8 @@ def get_db():
 
 
 @app.get('/')
-async def root(request: Request):
-    return templates.TemplateResponse('index.html', {'request': request})
-
-
-@app.post('/parse/', response_class=PlainTextResponse)
-async def create_upload_file(file: UploadFile = File(...)):
-    result = await parse_image(file)
-    return f'{result}'
+async def root(request: Request, message='Добро пожаловать!'):
+    return templates.TemplateResponse('index.html', {'request': request, 'message': message})
 
 
 @app.get('/users/')
@@ -49,10 +42,27 @@ def create_user(
         name: str = Form(...),
         file: UploadFile = File(...),
 ):
-    emb = '123'
+    try:
+        emb = get_embedding(file)
+    except Exception:
+        emb = '123'
     crud.create_user(db=db, name=name, emb=emb, filename='test')
-    print(file.filename)
-    return templates.TemplateResponse('index.html', {'request': request})
+    message = f'Создан пользователь {name}'
+    return templates.TemplateResponse('index.html', {'request': request, 'message': message})
+
+
+@app.post('/inference_photo/')
+def inference_photo(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    users = crud.get_users(db)
+    user = get_user_by_photo(file, users)
+    message = f' Это пользователь {user.name}'
+    return templates.TemplateResponse('index.html', {'request': request, 'message': message})
+
+
+@app.post('/parse/', response_class=PlainTextResponse)
+async def create_upload_file(file: UploadFile = File(...)):
+    result = get_embedding(file)
+    return f'{result}'
 
 
 @app.get('/is_live/')
