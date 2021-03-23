@@ -1,4 +1,4 @@
-from torch.nn import Identity, Linear, Module
+from torch.nn import BatchNorm1d, Identity, Linear, Module, Sequential
 from torchvision.models import (
     resnet18,
     resnet50,
@@ -17,12 +17,16 @@ class Extractor(Module):
             if n_layers == 18:
                 self.backbone = resnet18(pretrained=False)
             elif n_layers == 50:
-                self.backbone = resnet50(pretrained=False)
+                self.backbone = resnet50(pretrained=True)
             self.backbone.fc = Identity()
 
-        self.classifier = Linear(
-            in_features=2048,
-            out_features=out_features,
+        self.classifier = Sequential(
+            Linear(
+                in_features=2048,
+                out_features=out_features,
+                bias=False,
+            ),
+            BatchNorm1d(out_features),
         )
 
     def forward(self, x):
