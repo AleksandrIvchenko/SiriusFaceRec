@@ -15,7 +15,7 @@ class CommonArguments:
     neptune_project_name: str = 'sergevkim/arcface'
     seed: int = 9
     verbose: int = 1
-    version: str = 'arcface0.4'
+    version: str = 'arcface1.0'
 
 
 @dataclass
@@ -24,7 +24,7 @@ class DataArguments:
     data_path: Path = Path('./data/celeba')
     new_size: Tuple[int, int] = (128, 128)
     num_workers: int = 8
-    val_ratio: float = 0.1
+    val_ratio: float = 0.05
 
 
 @dataclass

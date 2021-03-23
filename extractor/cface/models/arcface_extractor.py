@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
 from torch.optim import SGD
 from torch.optim.lr_scheduler import LambdaLR
@@ -45,7 +46,10 @@ class ArcFaceExtractor(BaseModule):
             self,
             x,
         ):
-        return self.extractor(x)
+        x = self.extractor(x)
+        x = F.normalize(x)
+
+        return x
 
     def predict(
             self,

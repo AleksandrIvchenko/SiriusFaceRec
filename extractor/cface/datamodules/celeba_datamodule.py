@@ -8,7 +8,9 @@ from albumentations import (
     Compose,
     HorizontalFlip,
     Normalize,
+    RandomBrightnessContrast,
     Resize,
+    RGBShift,
 )
 from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader, Dataset
@@ -83,17 +85,24 @@ class CelebADataset(Dataset):
 class CelebADataModule(BaseDataModule):
     def setup(
             self,
-            val_ratio: float = 0.1,
+            val_ratio: float = 0.05,
             new_size: Tuple[int, int] = (128, 128),
             download: bool = False,
         ):
         data_transforms = Compose([
             Resize(new_size[0], new_size[1]),
+            HorizontalFlip(),
+            RGBShift(
+                r_shift_limit=15,
+                g_shift_limit=15,
+                b_shift_limit=15, 
+                p=0.25,
+            ),
+            RandomBrightnessContrast(p=0.25),
             Normalize(
                 mean=(0.485, 0.456, 0.406),
                 std=(0.229, 0.224, 0.225),
             ),
-            #HorizontalFlip(), TODO find how to flip landmarks
             ToTensorV2(),
         ])
         full_dataset = CelebADataset(
