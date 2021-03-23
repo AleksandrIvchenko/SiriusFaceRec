@@ -1,37 +1,16 @@
-<<<<<<< HEAD
 import cv2
 import numpy as np
 from itertools import product as product
 from math import ceil
 
 import torch
-from data import cfg_re50
-import cv2
-=======
-import sys
-
-import cv2
-import numpy as np
-from PIL import Image
-
->>>>>>> origin/det2
 
 def extractor_preprocessing(
         img,
         ldm,
         resize: int = 128,
     ):
-<<<<<<< HEAD
     src = ldm
-=======
-    src = np.array([
-        [ldm[0], ldm[1]],
-        [ldm[2], ldm[3]],
-        [ldm[4], ldm[5]],
-        [ldm[6], ldm[7]],
-        [ldm[8], ldm[9]],
-    ])
->>>>>>> origin/det2
     dst = np.array(
         [
             [38.2946, 51.6963],
@@ -57,7 +36,6 @@ def extractor_preprocessing(
 
     return face
 
-<<<<<<< HEAD
 def decode(loc, priors, variances):
     """Decode locations from predictions using priors to undo
     the encoding we did for offset regression at train time.
@@ -149,7 +127,7 @@ def pipeline(img_raw, loc, conf, landms):
     vis_thres = 0.6
 
     torch.set_grad_enabled(False)
-    cfg = cfg_re50
+    cfg = {'name': 'Resnet50', 'min_sizes': [[16, 32], [64, 128], [256, 512]], 'steps': [8, 16, 32], 'variance': [0.1, 0.2], 'clip': False, 'loc_weight': 2.0, 'gpu_train': True, 'batch_size': 24, 'ngpu': 4, 'epoch': 100, 'decay1': 70, 'decay2': 90, 'image_size': 840, 'pretrain': True, 'return_layers': {'layer2': 1, 'layer3': 2, 'layer4': 3}, 'in_channel': 256, 'out_channel': 256}
 
     device = 'cuda'
     resize = 1
@@ -207,15 +185,12 @@ def pipeline(img_raw, loc, conf, landms):
 
     dets = np.concatenate((dets, landms), axis=1)
 
-    # show image
     if save_image:
         for b in dets:
             if b[4] < vis_thres:
                 continue
-            text = "{:.4f}".format(b[4])
             b = list(map(int, b))
 
-    # save image
     landmarks = np.array([
         [b[5], b[6]],
         [b[7], b[8]],
@@ -225,57 +200,11 @@ def pipeline(img_raw, loc, conf, landms):
     ], dtype=np.float32)
 
     face = cut_face(img=img_raw, ldm=landmarks, resize=256)
-    name_rect_affin = 'toFE.jpg'
-    cv2.imwrite(name_rect_affin, face)
 
-    landmarks_str = '{}  {}  {}  {}  {}  {}  {}  {}  {}  {}'.format(
-        b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14])
-
-    return face, landmarks_str
+    return face, landmarks
 
 def detector_postprocessing (output0_data, output1_data, output2_data, raw_image):
     loc, conf, landms = output0_data, output1_data, output2_data
     image, landmarks = pipeline(raw_image, loc, conf, landms)
 
     return image, landmarks
-=======
-
-def expand2square(pil_img, background_color):
-    width, height = pil_img.size
-    if width == height:
-        return pil_img
-    elif width > height:
-        result = Image.new(pil_img.mode, (width, width), background_color)
-        result.paste(pil_img, (0, (width - height) // 2))
-        return result
-    else:
-        result = Image.new(pil_img.mode, (height, height), background_color)
-        result.paste(pil_img, ((height - width) // 2, 0))
-        return result
-
-
-def load_image(file):
-    mean = np.array([0.485, 0.456, 0.406])
-    std = np.array([0.229, 0.224, 0.225])
-    size = 640, 640
-    img = Image.open(file)
-    img.load()
-    img = img.convert('RGB')
-    img = expand2square(img, (0, 0, 0))
-    img.thumbnail(size, Image.ANTIALIAS)
-    image_array = np.float32(img)
-    image_array = (image_array - mean) / (std + sys.float_info.epsilon)
-    image_array = np.transpose(image_array, (2, 0, 1))
-    image_array = image_array[np.newaxis, ...]
-    image_array = image_array.astype(np.float32)
-    # resized_img = img.resize((640, 640), Image.BILINEAR)
-    # resized_img = np.array(resized_img)
-    # resized_img = resized_img.astype(np.float32)
-    # resized_img = np.transpose(resized_img, (2, 0, 1))
-    # resized_img = resized_img[np.newaxis, ...]
-    return image_array
-
-
-def detector_postprocessing(o1, o2, o3, image_array):
-    pass
->>>>>>> origin/det2

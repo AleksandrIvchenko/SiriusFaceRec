@@ -5,8 +5,7 @@ import tritonclient.grpc as grpcclient
 from PIL import Image
 
 from const import URL, CLIENT_TIMEOUT
-from utils import extractor_preprocessing
-from crop_and_landmarks import pipeline
+from utils import extractor_preprocessing, detector_postprocessing
 
 
 def get_triton_client() -> grpcclient.InferenceServerClient:
@@ -18,7 +17,7 @@ def get_triton_client() -> grpcclient.InferenceServerClient:
     return triton_client
 
 
-def load_image(file):
+def load_image(file, raw=False):
     img = Image.open(file)
     img.load()
     img = img.convert('RGB')
@@ -27,6 +26,10 @@ def load_image(file):
     resized_img = resized_img.astype(np.float32)
     resized_img = np.transpose(resized_img, (2, 0, 1))
     resized_img = resized_img[np.newaxis, ...]
+
+    if (raw == True):
+        resized_img = cv2.imread(file, cv2.IMREAD_COLOR)
+
     return resized_img
 
 
@@ -66,21 +69,6 @@ def detector(image_file):
     return output0_data, output1_data, output2_data
 
 def detector_postprocessing(output0_data, output1_data, output2_data, raw_image):
-    device = 'cuda'
-    net = torch.jit.load("./weights/FaceDetector.pt", map_location=torch.device(device))
-    net.eval()
-    """
-    image_path = "./curve/scar.jpeg"
-    img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
-    img = np.float32(img_raw)
-    im_height, im_width, _ = img.shape
-    scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
-    img -= (104, 117, 123)
-    img = img.transpose(2, 0, 1)
-    img = torch.from_numpy(img).unsqueeze(0)
-    img = img.to(device)
-    scale = scale.to(device)
-    """
     loc, conf, landms = output0_data, output1_data, output2_data #net(img)  # forward pass
 
     #image, landmarks = pipeline(img_raw, loc, conf, landms)
@@ -119,8 +107,17 @@ def extractor(image):
 
 def get_embedding(file):
     image_array = load_image(file.file)
+
+    #Must be added to Detector working process
+    image_array = torch.from_numpy(image_array)
+    image_array = image_array.to(device)
+    #_____________________________________#
+
     o1, o2, o3 = detector(image_array)
-    image, landmarks = detector_postprocessing(o1, o2, o3, image_array)
+
+    image_raw = load_image(file.file, raw=True)
+    image, landmarks = detector_postprocessing(o1, o2, o3, image_raw)
+
     image = extractor_preprocessing(
         img=image,
         ldm=landmarks,

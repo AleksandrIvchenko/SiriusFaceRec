@@ -3,7 +3,7 @@ import argparse
 import torch
 import torch.backends.cudnn as cudnn
 import numpy as np
-from data import cfg_re50
+#from data import cfg_re50
 from utils.nms.py_cpu_nms import py_cpu_nms
 import cv2
 import time
@@ -104,7 +104,9 @@ def pipeline(img_raw, loc, conf, landms):
     vis_thres = 0.6
 
     torch.set_grad_enabled(False)
-    cfg = cfg_re50
+    #cfg = cfg_re50
+
+    cfg = {'name': 'Resnet50', 'min_sizes': [[16, 32], [64, 128], [256, 512]], 'steps': [8, 16, 32], 'variance': [0.1, 0.2], 'clip': False, 'loc_weight': 2.0, 'gpu_train': True, 'batch_size': 24, 'ngpu': 4, 'epoch': 100, 'decay1': 70, 'decay2': 90, 'image_size': 840, 'pretrain': True, 'return_layers': {'layer2': 1, 'layer3': 2, 'layer4': 3}, 'in_channel': 256, 'out_channel': 256}
 
     device = 'cuda'
     resize = 1
@@ -180,22 +182,11 @@ def pipeline(img_raw, loc, conf, landms):
     ], dtype=np.float32)
 
     face = cut_face(img=img_raw, ldm=landmarks, resize=256)
-    name_rect_affin = 'toFE.jpg'
-    cv2.imwrite(name_rect_affin, face)
+    #name_rect_affin = 'toFE.jpg'
+    #cv2.imwrite(name_rect_affin, face)
 
 
-
-    # Save landmarks to txt
-    #file_name = image_path.split('/')[-1]
-    landmarks_str = '{}  {}  {}  {}  {}  {}  {}  {}  {}  {}'.format(
-        b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14])
-
-    # saveing landmarks as additional features
-    # text_file = open("landmarks.txt", "w")
-    # text_file.write(landmarks_str)
-    # text_file.close()
-
-    return face, landmarks_str
+    return face, landmarks
 
 def load_image(file, raw = False):
     img = Image.open(file)
@@ -221,35 +212,17 @@ if __name__ == '__main__':
 
     image_path = "./curve/scar3.jpeg"
 
-    """
-    img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
-    img = np.float32(img_raw)
-    im_height, im_width, _ = img.shape
-    scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
-    img -= (104, 117, 123)
-    img = img.transpose(2, 0, 1)
-    img = torch.from_numpy(img).unsqueeze(0)
-    img = img.to(device)
-    scale = scale.to(device)
-    """
     img = load_image(image_path)
     img = torch.from_numpy(img)
     img = img.to(device)
 
     loc, conf, landms = net(img)  # forward pass
 
-    img_raw = load_image(image_path)
+    img_raw = load_image(image_path, raw=True)
 
-    print(type(img_raw))
-    print(img_raw.shape)
+    face, landmarks = pipeline(img_raw, loc, conf, landms)
 
-    img_raw =cv2.imread(image_path, cv2.IMREAD_COLOR)
-
-    print(type(img_raw))
-    print(img_raw.shape)
-
-
-
-    pipeline(img_raw, loc, conf, landms)
+    print (face.shape)
+    print (landmarks)
 
     print("Sucess")
