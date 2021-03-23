@@ -229,11 +229,18 @@ def pipeline(img_raw, loc, conf, landms):
 
     dets = np.concatenate((dets, landms), axis=1)
 
+    bb_squares = []
     if save_image:
         for b in dets:
+            h = b[3] - b[1]
+            w = b[2] - b[0]
+            sq = h * w
+            bb_squares.append(sq)
             if b[4] < vis_thres:
                 continue
             b = list(map(int, b))
+
+    b = list(map(int, dets[np.argmax(bb_squares)]))
 
     landmarks = np.array([
         [b[5], b[6]],
