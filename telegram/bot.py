@@ -87,6 +87,17 @@ def cancel(update: Update, _: CallbackContext) -> int:
     return ConversationHandler.END
 
 
+def test_photo(update: Update, _: CallbackContext) -> int:
+    photo_file = update.message.photo[-1].get_file()
+    files = {'file': photo_file.download_as_bytearray()}
+    response = requests.post('http://web/test_normalize/', files=files)
+    if response.status_code == 200:
+        with open("test_image.png", 'wb') as f:
+            f.write(response.content)
+    update.message.reply_photo(open('test_image.png', 'rb'))
+    return CHOOSING
+
+
 def main() -> None:
     # Create the Updater and pass it your bot's token.
     updater = Updater(TOKEN)
@@ -101,6 +112,7 @@ def main() -> None:
             CHOOSING: [
                 MessageHandler(Filters.regex('^Определить человека$'), recognize_choice),
                 MessageHandler(Filters.regex('^Добавить человека$'), add_choice),
+                MessageHandler(Filters.photo, test_photo),
             ],
             PHOTO: [MessageHandler(Filters.photo, photo)],
             ADD_PHOTO: [MessageHandler(Filters.photo, add_photo)],

@@ -1,5 +1,6 @@
 import json
 import sys
+from io import BytesIO
 from typing import List, Optional, IO
 
 import numpy as np
@@ -120,3 +121,16 @@ def get_user_by_photo(file: Optional[IO], users: List[User]) -> str:
     dists = np.linalg.norm(new_embedding - embeddings, axis=1)
     min_index = np.argmin(dists)
     return users[min_index].name
+
+
+def get_embedding2(file: Optional[IO]):
+    test = load_image(file)
+    print(test.shape)
+    test = np.squeeze(test)
+    test = np.transpose(test, (1, 2, 0))
+    print(test.shape)
+    img = Image.fromarray(test, 'RGB')
+    temp = BytesIO()
+    img.save(temp, format="png")
+    temp.seek(0)
+    return temp
