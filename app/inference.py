@@ -1,11 +1,14 @@
+import json
 import sys
+from typing import List, Optional, IO
 
 import numpy as np
 import tritonclient.grpc as grpcclient
 from PIL import Image
 
 from const import URL, CLIENT_TIMEOUT
-from utils import extractor_preprocessing, detector_postprocessing
+from models import User
+from utils import extractor_preprocessing, load_image, detector_postprocessing
 
 
 def get_triton_client() -> grpcclient.InferenceServerClient:
@@ -17,23 +20,7 @@ def get_triton_client() -> grpcclient.InferenceServerClient:
     return triton_client
 
 
-def load_image(file, raw=False):
-    img = Image.open(file)
-    img.load()
-    img = img.convert('RGB')
-    resized_img = img.resize((640, 640), Image.BILINEAR)
-    resized_img = np.array(resized_img)
-    resized_img = resized_img.astype(np.float32)
-    resized_img = np.transpose(resized_img, (2, 0, 1))
-    resized_img = resized_img[np.newaxis, ...]
-
-    if (raw == True):
-        resized_img = cv2.imread(file, cv2.IMREAD_COLOR)
-
-    return resized_img
-
-
-def detector(image_file):
+def detector(image_array):
     triton_client = get_triton_client()
     model_name = "facedetector"
 
@@ -44,7 +31,7 @@ def detector(image_file):
 
     # Initialize the data
 
-    inputs[0].set_data_from_numpy(image_file)
+    inputs[0].set_data_from_numpy(image_array)
 
     outputs.append(grpcclient.InferRequestedOutput('output__0'))
     outputs.append(grpcclient.InferRequestedOutput('output__1'))
@@ -68,19 +55,10 @@ def detector(image_file):
     print(output2_data.shape)
     return output0_data, output1_data, output2_data
 
-def detector_postprocessing(output0_data, output1_data, output2_data, raw_image):
-    loc, conf, landms = output0_data, output1_data, output2_data #net(img)  # forward pass
-
-    #image, landmarks = pipeline(img_raw, loc, conf, landms)
-    image, landmarks = pipeline(raw_image, loc, conf, landms)
-
-    return image, landmarks
-
-
 
 def extractor(image):
     triton_client = get_triton_client()
-    model_name = "featureextractor"
+    model_name = "extractor"
 
     # Infer
     inputs = []
@@ -105,29 +83,31 @@ def extractor(image):
     return embedding
 
 
-def get_embedding(file):
-    image_array = load_image(file.file)
-
-    #Must be added to Detector working process
-    image_array = torch.from_numpy(image_array)
-    image_array = image_array.to(device)
-    #_____________________________________#
-
-    o1, o2, o3 = detector(image_array)
-
-    image_raw = load_image(file.file, raw=True)
-    image, landmarks = detector_postprocessing(o1, o2, o3, image_raw)
-
-    image = extractor_preprocessing(
-        img=image,
-        ldm=landmarks,
-        resize=128,
-    )
-    embedding = extractor(image)
-
+def get_embedding(file: Optional[IO]) -> np.ndarray:
+    try:
+        image_array = load_image(file)
+        o1, o2, o3 = detector(image_array)
+        image, landmarks = detector_postprocessing(o1, o2, o3, image_array)
+        image = extractor_preprocessing(
+            img=image,
+            ldm=landmarks,
+            resize=128,
+        )
+        embedding = extractor(image)
+    except:
+        embedding = np.arange(512)
     return embedding
 
 
-def get_user_by_photo(file, users):
-    pass
-    return users[0]
+def get_user_by_photo(file: Optional[IO], users: List[User]) -> str:
+    try:
+        new_embedding = get_embedding(file)
+    except:
+        new_embedding = np.arange(512)
+    embeddings = []
+    for user in users:
+        embeddings.append(np.array(json.loads(user.emb), dtype=np.float32))
+    embeddings = np.array(embeddings)
+    dists = np.linalg.norm(new_embedding - embeddings, axis=1)
+    min_index = np.argmin(dists)
+    return users[min_index].name

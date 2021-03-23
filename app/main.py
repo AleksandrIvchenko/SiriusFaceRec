@@ -1,4 +1,5 @@
-from fastapi import Depends, FastAPI, File, Form, Request, UploadFile, Body
+import json
+from fastapi import Depends, FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -39,17 +40,9 @@ def read_users(request: Request, skip: int = 0, limit: int = 100, db: Session = 
 
 
 @app.post("/users/")
-def create_user(
-        request: Request,
-        db: Session = Depends(get_db),
-        name: str = Form(...),
-        file: UploadFile = File(...),
-):
-    try:
-        emb = get_embedding(file)
-    except Exception:
-        emb = '123'
-    crud.create_user(db=db, name=name, emb=emb, filename='test')
+def create_user(request: Request, db: Session = Depends(get_db), name: str = Form(...), file: UploadFile = File(...)):
+    emb = json.dumps(get_embedding(file.file).tolist())
+    crud.create_user(db=db, name=name, emb=emb, filename=file.filename)
     message = f'Создан пользователь {name}'
     return templates.TemplateResponse('index.html', {'request': request, 'message': message})
 
@@ -57,20 +50,22 @@ def create_user(
 @app.post('/inference_photo/')
 def inference_photo(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
     users = crud.get_users(db)
-    user = get_user_by_photo(file, users)
-    message = f' Это пользователь {user.name}'
+    user_name = get_user_by_photo(file.file, users)
+    message = f' Это пользователь {user_name}'
     return templates.TemplateResponse('index.html', {'request': request, 'message': message})
 
 
 @app.post('/parse/', response_class=PlainTextResponse)
-async def inference_photo_api(file: UploadFile = File(...)):
-    result = get_embedding(file)
-    return f'{result}'
+async def inference_photo_api(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    users = crud.get_users(db)
+    user_name = get_user_by_photo(file.file, users)
+    message = f' Это пользователь {user_name}'
+    return message
 
 
 @app.post('/add/', response_class=PlainTextResponse)
 async def create_user_api(name: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db)):
-    emb = get_embedding(file)
+    emb = json.dumps(get_embedding(file.file).tolist())
     crud.create_user(db=db, name=name, emb=emb, filename='from_telegram')
     message = f'Создан пользователь {name}'
     return message
