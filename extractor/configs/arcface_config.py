@@ -15,7 +15,7 @@ class CommonArguments:
     neptune_project_name: str = 'sergevkim/arcface'
     seed: int = 9
     verbose: int = 1
-    version: str = 'arcface0.2'
+    version: str = 'arcface0.4'
 
 
 @dataclass
