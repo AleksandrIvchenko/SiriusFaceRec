@@ -5,7 +5,7 @@ from typing import List, Optional, IO
 
 import numpy as np
 import tritonclient.grpc as grpcclient
-from PIL import Image
+
 
 from const import URL, CLIENT_TIMEOUT
 from models import User
@@ -87,15 +87,9 @@ def extractor(image):
 def get_embedding(file: Optional[IO]) -> np.ndarray:
     try:
         image_array = load_image(file)
-
-        # Must be added to Detector working process
-        image_array = torch.from_numpy(image_array)
-        image_array = image_array.to(device)
-        # _____________________________________#
-
         o1, o2, o3 = detector(image_array)
 
-        image_raw = load_image(file.file, raw=True)
+        image_raw = load_image(file, raw=True)
 
         image, landmarks = detector_postprocessing(o1, o2, o3, image_raw)
         image = extractor_preprocessing(

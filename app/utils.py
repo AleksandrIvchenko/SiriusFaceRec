@@ -3,6 +3,9 @@ import numpy as np
 from itertools import product as product
 from math import ceil
 import torch
+from PIL import Image
+from utils.nms.py_cpu_nms import py_cpu_nms
+
 
 def expand2square(pil_img, background_color):
     width, height = pil_img.size
@@ -49,6 +52,7 @@ def extractor_preprocessing(
 
     return face
 
+
 def decode(loc, priors, variances):
     """Decode locations from predictions using priors to undo
     the encoding we did for offset regression at train time.
@@ -69,6 +73,7 @@ def decode(loc, priors, variances):
     boxes[:, 2:] += boxes[:, :2]
     return boxes
 
+
 def decode_landm(pre, priors, variances):
     """Decode landm from predictions using priors to undo
     the encoding we did for offset regression at train time.
@@ -88,6 +93,7 @@ def decode_landm(pre, priors, variances):
                         priors[:, :2] + pre[:, 8:10] * variances[0] * priors[:, 2:],
                         ), dim=1)
     return landms
+
 
 def cut_face(img, ldm, resize=256):
     dst = np.array([[38.2946, 51.6963],
@@ -216,6 +222,7 @@ def pipeline(img_raw, loc, conf, landms):
 
     return face, landmarks
 
+
 def detector_postprocessing (output0_data, output1_data, output2_data, raw_image):
     loc, conf, landms = output0_data, output1_data, output2_data
     image, landmarks = pipeline(raw_image, loc, conf, landms)
@@ -246,3 +253,4 @@ def load_image(file, raw = False):
         image_array = cv2.imread(file, cv2.IMREAD_COLOR)
 
     return image_array
+
