@@ -1,8 +1,12 @@
+import json
 import sys
+from typing import List, Optional, IO
 
+import numpy as np
 import tritonclient.grpc as grpcclient
 
 from const import URL, CLIENT_TIMEOUT
+from models import User
 from utils import extractor_preprocessing, load_image, detector_postprocessing
 
 
@@ -78,20 +82,31 @@ def extractor(image):
     return embedding
 
 
-def get_embedding(file):
-    image_array = load_image(file.file)
-    o1, o2, o3 = detector(image_array)
-    image, landmarks = detector_postprocessing(o1, o2, o3, image_array)
-    image = extractor_preprocessing(
-        img=image,
-        ldm=landmarks,
-        resize=128,
-    )
-    embedding = extractor(image)
-
+def get_embedding(file: Optional[IO]) -> np.ndarray:
+    try:
+        image_array = load_image(file)
+        o1, o2, o3 = detector(image_array)
+        image, landmarks = detector_postprocessing(o1, o2, o3, image_array)
+        image = extractor_preprocessing(
+            img=image,
+            ldm=landmarks,
+            resize=128,
+        )
+        embedding = extractor(image)
+    except:
+        embedding = np.arange(512)
     return embedding
 
 
-def get_user_by_photo(file, users):
-    pass
-    return users[0]
+def get_user_by_photo(file: Optional[IO], users: List[User]) -> str:
+    try:
+        new_embedding = get_embedding(file)
+    except:
+        new_embedding = np.arange(512)
+    embeddings = []
+    for user in users:
+        embeddings.append(np.array(json.loads(user.emb, dtype=np.float32)))
+    embeddings = np.array(embeddings)
+    dists = np.linalg.norm(new_embedding - embeddings, axis=1)
+    min_index = np.argmin(dists)
+    return users[min_index].name
