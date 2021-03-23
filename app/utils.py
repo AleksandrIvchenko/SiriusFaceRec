@@ -1,17 +1,42 @@
-from __future__ import print_function
-import argparse
-import torch
-import torch.backends.cudnn as cudnn
-import numpy as np
-from data import cfg_re50
-from utils.nms.py_cpu_nms import py_cpu_nms
 import cv2
-import time
-import io
-from PIL import Image
-
+import numpy as np
 from itertools import product as product
 from math import ceil
+
+import torch
+from data import cfg_re50
+import cv2
+
+def extractor_preprocessing(
+        img,
+        ldm,
+        resize: int = 128,
+    ):
+    src = ldm
+    dst = np.array(
+        [
+            [38.2946, 51.6963],
+            [73.5318, 51.5014],
+            [56.0252, 71.7366],
+            [41.5493, 92.3655],
+            [70.7299, 92.2041],
+        ],
+        dtype=np.float32,
+    )
+    dst = dst * resize / 112
+    M, inliers = cv2.estimateAffinePartial2D(
+        src,
+        dst,
+        method=cv2.RANSAC,
+        ransacReprojThreshold=5,
+    )
+    face = cv2.warpAffine(
+        img,
+        M,
+        (resize, resize),
+    )
+
+    return face
 
 def decode(loc, priors, variances):
     """Decode locations from predictions using priors to undo
@@ -183,73 +208,13 @@ def pipeline(img_raw, loc, conf, landms):
     name_rect_affin = 'toFE.jpg'
     cv2.imwrite(name_rect_affin, face)
 
-
-
-    # Save landmarks to txt
-    #file_name = image_path.split('/')[-1]
     landmarks_str = '{}  {}  {}  {}  {}  {}  {}  {}  {}  {}'.format(
         b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14])
 
-    # saveing landmarks as additional features
-    # text_file = open("landmarks.txt", "w")
-    # text_file.write(landmarks_str)
-    # text_file.close()
-
     return face, landmarks_str
 
-def load_image(file, raw = False):
-    img = Image.open(file)
-    img.load()
-    img = img.convert('RGB')
-    resized_img = img.resize((640, 640), Image.BILINEAR)
-    resized_img = np.array(resized_img)
-    resized_img = resized_img.astype(np.float32)
-    resized_img = np.transpose(resized_img, (2, 0, 1))
-    resized_img = resized_img[np.newaxis, ...]
+def detector_postprocessing (output0_data, output1_data, output2_data, raw_image):
+    loc, conf, landms = output0_data, output1_data, output2_data
+    image, landmarks = pipeline(raw_image, loc, conf, landms)
 
-    if (raw == True):
-        resized_img = cv2.imread(file, cv2.IMREAD_COLOR)
-
-    return resized_img
-
-if __name__ == '__main__':
-
-
-    device = 'cuda'
-    net = torch.jit.load("./weights/FaceDetector.pt", map_location=torch.device(device))
-    net.eval()
-
-    image_path = "./curve/scar3.jpeg"
-
-    """
-    img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
-    img = np.float32(img_raw)
-    im_height, im_width, _ = img.shape
-    scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
-    img -= (104, 117, 123)
-    img = img.transpose(2, 0, 1)
-    img = torch.from_numpy(img).unsqueeze(0)
-    img = img.to(device)
-    scale = scale.to(device)
-    """
-    img = load_image(image_path)
-    img = torch.from_numpy(img)
-    img = img.to(device)
-
-    loc, conf, landms = net(img)  # forward pass
-
-    img_raw = load_image(image_path)
-
-    print(type(img_raw))
-    print(img_raw.shape)
-
-    img_raw =cv2.imread(image_path, cv2.IMREAD_COLOR)
-
-    print(type(img_raw))
-    print(img_raw.shape)
-
-
-
-    pipeline(img_raw, loc, conf, landms)
-
-    print("Sucess")
+    return image, landmarks
