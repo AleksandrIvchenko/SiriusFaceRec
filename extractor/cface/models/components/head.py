@@ -75,10 +75,11 @@ class Head(Module):
             mode: str = 'arcface',
             in_features: int = 512,
             out_features: int = 10,
-            m: float = 0.5,
-            s: float = 64,
+            m: float = 0.25,
+            s: float = 32,
         ):
         super().__init__()
+        self.mode = mode
         if mode == 'linear':
             self.head = Linear(
                 in_features=in_features,
@@ -88,6 +89,8 @@ class Head(Module):
             self.head = ArcFaceLayer(
                 in_features=in_features,
                 out_features=out_features,
+                m=m,
+                s=s,
             )
 
     def forward(
@@ -95,7 +98,10 @@ class Head(Module):
             embeddings,
             labels,
         ):
-        return self.head(embeddings, labels)
+        if self.mode == 'arcface':
+            return self.head(embeddings, labels)
+        elif self.mode == 'linear':
+            return self.head(embeddings)
 
 
 if __name__ == '__main__':
