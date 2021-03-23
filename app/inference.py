@@ -105,7 +105,7 @@ def get_user_by_photo(file: Optional[IO], users: List[User]) -> str:
         new_embedding = np.arange(512)
     embeddings = []
     for user in users:
-        embeddings.append(np.array(json.loads(user.emb, dtype=np.float32)))
+        embeddings.append(np.array(json.loads(user.emb), dtype=np.float32))
     embeddings = np.array(embeddings)
     dists = np.linalg.norm(new_embedding - embeddings, axis=1)
     min_index = np.argmin(dists)
