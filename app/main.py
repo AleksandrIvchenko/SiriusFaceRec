@@ -1,15 +1,17 @@
+import io
 import json
 from fastapi import Depends, FastAPI, File, Form, Request, UploadFile
 from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from starlette.responses import StreamingResponse
 
 import crud
 import models
 from check_inference import check_inference, check_live
 from database import SessionLocal, engine
-from inference import get_embedding, get_user_by_photo
+from inference import get_embedding, get_user_by_photo, get_embedding2
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -79,3 +81,8 @@ def is_live():
 @app.get('/is_inference/')
 def is_inference():
     return check_inference()
+
+
+@app.post('/test_normalize/')
+async def test_normalize(file: UploadFile = File(...)):
+    return StreamingResponse(get_embedding2(file.file), media_type="image/png")
