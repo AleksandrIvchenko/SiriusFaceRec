@@ -165,12 +165,10 @@ def pipeline(img_raw, loc, conf, landms):
     dets = np.concatenate((dets, landms), axis=1)
 
     # show image
-    if save_image:
-        for b in dets:
-            if b[4] < vis_thres:
-                continue
-            text = "{:.4f}".format(b[4])
-            b = list(map(int, b))
+    for b in dets:
+        if b[4] < vis_thres:
+            continue
+        b = list(map(int, b))
 
     # save image
     landmarks = np.array([
@@ -189,19 +187,45 @@ def pipeline(img_raw, loc, conf, landms):
     return face, landmarks
 
 def load_image(file, raw = False):
+    mean = np.array([0.485*255, 0.456*255, 0.406*255])
+    std = np.array([0.229*255, 0.224*255, 0.225*255])
+    size = 640, 640
     img = Image.open(file)
     img.load()
     img = img.convert('RGB')
-    resized_img = img.resize((640, 640), Image.BILINEAR)
-    resized_img = np.array(resized_img)
-    resized_img = resized_img.astype(np.float32)
-    resized_img = np.transpose(resized_img, (2, 0, 1))
-    resized_img = resized_img[np.newaxis, ...]
-
+    img = expand2square(img, (0, 0, 0))
+    img.thumbnail(size, Image.ANTIALIAS)
+    image_array = np.float32(img)
+    image_array = (image_array - mean) / (std + sys.float_info.epsilon)
+    image_array = np.transpose(image_array, (2, 0, 1))
+    image_array = image_array[np.newaxis, ...]
+    image_array = image_array.astype(np.float32)
+    # resized_img = img.resize((640, 640), Image.BILINEAR)
+    # resized_img = np.array(resized_img)
+    # resized_img = resized_img.astype(np.float32)
+    # resized_img = np.transpose(resized_img, (2, 0, 1))
+    # resized_img = resized_img[np.newaxis, ...]
     if (raw == True):
-        resized_img = cv2.imread(file, cv2.IMREAD_COLOR)
+        image_array = cv2.imread(file, cv2.IMREAD_COLOR)
 
-    return resized_img
+    return image_array
+
+import sys
+
+def expand2square(pil_img, background_color):
+    width, height = pil_img.size
+    if width == height:
+        return pil_img
+    elif width > height:
+        result = Image.new(pil_img.mode, (width, width), background_color)
+        result.paste(pil_img, (0, (width - height) // 2))
+        return result
+    else:
+        result = Image.new(pil_img.mode, (height, height), background_color)
+        result.paste(pil_img, ((height - width) // 2, 0))
+        return result
+
+
 
 if __name__ == '__main__':
 

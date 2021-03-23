@@ -86,8 +86,17 @@ def extractor(image):
 def get_embedding(file: Optional[IO]) -> np.ndarray:
     try:
         image_array = load_image(file)
+
+        # Must be added to Detector working process
+        image_array = torch.from_numpy(image_array)
+        image_array = image_array.to(device)
+        # _____________________________________#
+
         o1, o2, o3 = detector(image_array)
-        image, landmarks = detector_postprocessing(o1, o2, o3, image_array)
+
+        image_raw = load_image(file.file, raw=True)
+
+        image, landmarks = detector_postprocessing(o1, o2, o3, image_raw)
         image = extractor_preprocessing(
             img=image,
             ldm=landmarks,
