@@ -180,28 +180,13 @@ def pipeline(img_raw, loc, conf, landms):
     torch.set_grad_enabled(False)
     cfg = {'name': 'Resnet50', 'min_sizes': [[16, 32], [64, 128], [256, 512]], 'steps': [8, 16, 32], 'variance': [0.1, 0.2], 'clip': False, 'loc_weight': 2.0, 'gpu_train': True, 'batch_size': 24, 'ngpu': 4, 'epoch': 100, 'decay1': 70, 'decay2': 90, 'image_size': 840, 'pretrain': True, 'return_layers': {'layer2': 1, 'layer3': 2, 'layer4': 3}, 'in_channel': 256, 'out_channel': 256}
 
-    # device = 'cpu'
     resize = 1
-
-    # img = np.float32(img_raw)
-    # print(img.shape, type(img), img.dtype)
-    #
-    # im_height, im_width, _ = img.shape
-    # scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
-    # img -= (104, 117, 123)
-    # img = img.transpose(2, 0, 1)
-    # img = torch.from_numpy(img).unsqueeze(0)
-    #
-    #
 
     img = expand2square(img_raw, (0, 0, 0))
     img.thumbnail((640, 640), Image.ANTIALIAS)
     img = np.array(img)
     im_height, im_width, _ = img.shape
     scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
-
-    # img = img.to(device)
-    # scale = scale.to(device)
 
     priors = PriorBox(cfg, image_size=(im_height, im_width)).forward()
 
@@ -217,7 +202,6 @@ def pipeline(img_raw, loc, conf, landms):
     scale1 = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0],
                            img.shape[1], img.shape[0], img.shape[1], img.shape[0],
                            img.shape[1], img.shape[0]])
-    # scale1 = scale1.to(device)
     landms = landms * scale1 / resize
     landms = landms.numpy()
 
@@ -236,7 +220,6 @@ def pipeline(img_raw, loc, conf, landms):
     # do NMS
     dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
     keep = py_cpu_nms(dets, nms_threshold)
-    # keep = nms(dets, args.nms_threshold,force_cpu=args.cpu)
     dets = dets[keep, :]
     landms = landms[keep]
 
@@ -272,7 +255,7 @@ def detector_postprocessing(output0_data, output1_data, output2_data, raw_image)
     return image, landmarks
 
 
-def load_image(file, raw = False):
+def load_image(file):
     mean = np.array([0.485*255, 0.456*255, 0.406*255])
     std = np.array([0.229*255, 0.224*255, 0.225*255])
     size = 640, 640
@@ -286,9 +269,4 @@ def load_image(file, raw = False):
     image_array = np.transpose(image_array, (2, 0, 1))
     image_array = image_array[np.newaxis, ...]
     image_array = image_array.astype(np.float32)
-    # resized_img = img.resize((640, 640), Image.BILINEAR)
-    # resized_img = np.array(resized_img)
-    # resized_img = resized_img.astype(np.float32)
-    # resized_img = np.transpose(resized_img, (2, 0, 1))
-    # resized_img = resized_img[np.newaxis, ...]
     return image_array

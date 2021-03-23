@@ -124,14 +124,8 @@ def get_embedding2(file: Optional[IO]):
     image_array = (image_array - mean) / std
     image_array = np.transpose(image_array, (2, 0, 1))
     image_array = image_array[np.newaxis, ...]
-    # print(image_array.shape)
     embedding = extractor(image_array.astype(np.float32))
     print(embedding)
-
-    # print(test.shape)
-    # test = np.squeeze(test)
-    # test = np.transpose(test, (1, 2, 0))
-    # print(test.shape)
     image = Image.fromarray(image, 'RGB')
     temp = BytesIO()
     image.save(temp, format="png")

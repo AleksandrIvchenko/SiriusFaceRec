@@ -22,7 +22,7 @@ URL_PARSE = 'http://web/parse/'
 URL_ADD = 'http://web/add/'
 TOKEN = '1763937310:AAHFmqPqQADl4Qimq3klBnrHm3WF1aDSHUs'
 CHOOSING, PHOTO, ADD_PHOTO, ADD_FINISH = range(4)
-_REPLY_KEYBOARD = [['Определить человека', 'Добавить человека']]
+_REPLY_KEYBOARD = [['Определить человека', 'Добавить человека', 'Выход']]
 
 
 def start(update: Update, _: CallbackContext) -> int:
@@ -110,6 +110,7 @@ def main() -> None:
             CHOOSING: [
                 MessageHandler(Filters.regex('^Определить человека$'), recognize_choice),
                 MessageHandler(Filters.regex('^Добавить человека$'), add_choice),
+                MessageHandler(Filters.regex('^Выход$'), cancel),
                 MessageHandler(Filters.photo, test_photo),
             ],
             PHOTO: [MessageHandler(Filters.photo, photo)],
