@@ -3,20 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <title>Список пользователей</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/bootstrap-theme.min.css') }}">
 </head>
 <body>
-<h3>Sirius ML Face Recognition</h3>
-<br>
-<h4>Список пользователей</h4>
-<table>
-<tr>
-    <td style="width:10%"><b>Имя</b></td>
-    <td style="width:10%"><b>Embedding</b></td>
-    <td style="width:10%"><b>Файл</b></td>
-</tr>
-    {% for user in users %}
-        <tr><td>{{ user.name }}</td><td>{{ user.emb }}</td><td>{{ user.filename }}</td></tr>
-    {% endfor %}
-</table>
+<div class="container theme-showcase" role="main">
+    <h2>Sirius ML Face Recognition</h2>
+    <br>
+    <h4>Список пользователей</h4>
+    <table class="table">
+        <tr>
+            <td style="width:10%"><b>Имя</b></td>
+            <td style="width:10%"><b>Embedding</b></td>
+            <td style="width:10%"><b>Файл</b></td>
+        </tr>
+        {% for user in users %}
+        <tr>
+            <td>{{ user.name }}</td>
+            <td>{{ user.emb }}</td>
+            <td>{{ user.filename }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
 </body>
 </html>

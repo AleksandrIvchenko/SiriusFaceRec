@@ -1,17 +1,88 @@
-from __future__ import print_function
-import argparse
-import torch
-import torch.backends.cudnn as cudnn
-import numpy as np
-#from data import cfg_re50
-from utils.nms.py_cpu_nms import py_cpu_nms
 import cv2
-import time
-import io
-from PIL import Image
-
+import numpy as np
+import sys
+import torch
 from itertools import product as product
 from math import ceil
+from PIL import Image
+
+
+def py_cpu_nms(dets, thresh):
+    """Pure Python NMS baseline."""
+    x1 = dets[:, 0]
+    y1 = dets[:, 1]
+    x2 = dets[:, 2]
+    y2 = dets[:, 3]
+    scores = dets[:, 4]
+
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    order = scores.argsort()[::-1]
+
+    keep = []
+    while order.size > 0:
+        i = order[0]
+        keep.append(i)
+        xx1 = np.maximum(x1[i], x1[order[1:]])
+        yy1 = np.maximum(y1[i], y1[order[1:]])
+        xx2 = np.minimum(x2[i], x2[order[1:]])
+        yy2 = np.minimum(y2[i], y2[order[1:]])
+
+        w = np.maximum(0.0, xx2 - xx1 + 1)
+        h = np.maximum(0.0, yy2 - yy1 + 1)
+        inter = w * h
+        ovr = inter / (areas[i] + areas[order[1:]] - inter)
+
+        inds = np.where(ovr <= thresh)[0]
+        order = order[inds + 1]
+
+    return keep
+
+
+def expand2square(pil_img, background_color):
+    width, height = pil_img.size
+    if width == height:
+        return pil_img
+    elif width > height:
+        result = Image.new(pil_img.mode, (width, width), background_color)
+        result.paste(pil_img, (0, (width - height) // 2))
+        return result
+    else:
+        result = Image.new(pil_img.mode, (height, height), background_color)
+        result.paste(pil_img, ((height - width) // 2, 0))
+        return result
+
+
+def extractor_preprocessing(
+        img,
+        ldm,
+        resize: int = 128,
+    ):
+    src = ldm
+    dst = np.array(
+        [
+            [38.2946, 51.6963],
+            [73.5318, 51.5014],
+            [56.0252, 71.7366],
+            [41.5493, 92.3655],
+            [70.7299, 92.2041],
+        ],
+        dtype=np.float32,
+    )
+    dst = dst * resize / 112
+    M, inliers = cv2.estimateAffinePartial2D(
+        src,
+        dst,
+        method=cv2.RANSAC,
+        ransacReprojThreshold=5,
+    )
+    face = cv2.warpAffine(
+        img,
+        M,
+        (resize, resize),
+    )
+
+    return face
+
 
 def decode(loc, priors, variances):
     """Decode locations from predictions using priors to undo
@@ -33,6 +104,7 @@ def decode(loc, priors, variances):
     boxes[:, 2:] += boxes[:, :2]
     return boxes
 
+
 def decode_landm(pre, priors, variances):
     """Decode landm from predictions using priors to undo
     the encoding we did for offset regression at train time.
@@ -52,6 +124,7 @@ def decode_landm(pre, priors, variances):
                         priors[:, :2] + pre[:, 8:10] * variances[0] * priors[:, 2:],
                         ), dim=1)
     return landms
+
 
 def cut_face(img, ldm, resize=256):
     dst = np.array([[38.2946, 51.6963],
@@ -104,8 +177,6 @@ def pipeline(img_raw, loc, conf, landms):
     vis_thres = 0.6
 
     torch.set_grad_enabled(False)
-    #cfg = cfg_re50
-
     cfg = {'name': 'Resnet50', 'min_sizes': [[16, 32], [64, 128], [256, 512]], 'steps': [8, 16, 32], 'variance': [0.1, 0.2], 'clip': False, 'loc_weight': 2.0, 'gpu_train': True, 'batch_size': 24, 'ngpu': 4, 'epoch': 100, 'decay1': 70, 'decay2': 90, 'image_size': 840, 'pretrain': True, 'return_layers': {'layer2': 1, 'layer3': 2, 'layer4': 3}, 'in_channel': 256, 'out_channel': 256}
 
     device = 'cuda'
@@ -164,13 +235,12 @@ def pipeline(img_raw, loc, conf, landms):
 
     dets = np.concatenate((dets, landms), axis=1)
 
-    # show image
-    for b in dets:
-        if b[4] < vis_thres:
-            continue
-        b = list(map(int, b))
+    if save_image:
+        for b in dets:
+            if b[4] < vis_thres:
+                continue
+            b = list(map(int, b))
 
-    # save image
     landmarks = np.array([
         [b[5], b[6]],
         [b[7], b[8]],
@@ -180,11 +250,16 @@ def pipeline(img_raw, loc, conf, landms):
     ], dtype=np.float32)
 
     face = cut_face(img=img_raw, ldm=landmarks, resize=256)
-    #name_rect_affin = 'toFE.jpg'
-    #cv2.imwrite(name_rect_affin, face)
-
 
     return face, landmarks
+
+
+def detector_postprocessing (output0_data, output1_data, output2_data, raw_image):
+    loc, conf, landms = output0_data, output1_data, output2_data
+    image, landmarks = pipeline(raw_image, loc, conf, landms)
+
+    return image, landmarks
+
 
 def load_image(file, raw = False):
     mean = np.array([0.485*255, 0.456*255, 0.406*255])
@@ -210,43 +285,3 @@ def load_image(file, raw = False):
 
     return image_array
 
-import sys
-
-def expand2square(pil_img, background_color):
-    width, height = pil_img.size
-    if width == height:
-        return pil_img
-    elif width > height:
-        result = Image.new(pil_img.mode, (width, width), background_color)
-        result.paste(pil_img, (0, (width - height) // 2))
-        return result
-    else:
-        result = Image.new(pil_img.mode, (height, height), background_color)
-        result.paste(pil_img, ((height - width) // 2, 0))
-        return result
-
-
-
-if __name__ == '__main__':
-
-
-    device = 'cuda'
-    net = torch.jit.load("./weights/FaceDetector.pt", map_location=torch.device(device))
-    net.eval()
-
-    image_path = "./curve/scar3.jpeg"
-
-    img = load_image(image_path)
-    img = torch.from_numpy(img)
-    img = img.to(device)
-
-    loc, conf, landms = net(img)  # forward pass
-
-    img_raw = load_image(image_path, raw=True)
-
-    face, landmarks = pipeline(img_raw, loc, conf, landms)
-
-    print (face.shape)
-    print (landmarks)
-
-    print("Sucess")

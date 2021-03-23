@@ -1,11 +1,11 @@
-name: "facedetector"
+name: "extractor"
 platform: "pytorch_libtorch"
 max_batch_size: 8
 input [
   {
     name: "input__0"
     data_type: TYPE_FP32
-    dims: [ 3, 256, 256 ]
+    dims: [ 3, 128, 128 ]
   }
 ]
 output [
@@ -13,5 +13,5 @@ output [
     name: "output__0"
     data_type: TYPE_FP32
     dims: [ 512 ]
-  },
+  }
 ]
