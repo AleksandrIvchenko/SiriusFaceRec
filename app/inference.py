@@ -86,29 +86,23 @@ def extractor(image):
 
 
 def get_embedding(file: Optional[IO]) -> np.ndarray:
-    try:
-        mean = np.array([0.485 * 255, 0.456 * 255, 0.406 * 255])
-        std = np.array([0.229 * 255, 0.224 * 255, 0.225 * 255])
+    mean = np.array([0.485 * 255, 0.456 * 255, 0.406 * 255])
+    std = np.array([0.229 * 255, 0.224 * 255, 0.225 * 255])
 
-        image_array = load_image(file)
-        o1, o2, o3 = detector(image_array)
+    image_array = load_image(file)
+    o1, o2, o3 = detector(image_array)
 
-        image, landmarks = detector_postprocessing(o1, o2, o3, Image.open(file))
-        image_array = np.float32(image)
-        image_array = (image_array - mean) / std
-        image_array = np.transpose(image_array, (2, 0, 1))
-        image_array = image_array[np.newaxis, ...]
-        embedding = extractor(image_array.astype(np.float32))
-    except:
-        embedding = np.arange(512)
+    image, landmarks = detector_postprocessing(o1, o2, o3, Image.open(file))
+    image_array = np.float32(image)
+    image_array = (image_array - mean) / std
+    image_array = np.transpose(image_array, (2, 0, 1))
+    image_array = image_array[np.newaxis, ...]
+    embedding = extractor(image_array.astype(np.float32))
     return np.squeeze(embedding)
 
 
 def get_user_by_photo(file: Optional[IO], users: List[User]) -> str:
-    try:
-        new_embedding = get_embedding(file)
-    except:
-        new_embedding = np.arange(512)
+    new_embedding = get_embedding(file)
     embeddings = []
     for user in users:
         embeddings.append(np.array(json.loads(user.emb), dtype=np.float32))
