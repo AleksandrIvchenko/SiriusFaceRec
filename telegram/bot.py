@@ -92,9 +92,7 @@ def test_photo(update: Update, _: CallbackContext) -> int:
     files = {'file': photo_file.download_as_bytearray()}
     response = requests.post('http://web/test_normalize/', files=files)
     if response.status_code == 200:
-        with open("test_image.png", 'wb') as f:
-            f.write(response.content)
-    update.message.reply_photo(open('test_image.png', 'rb'))
+        update.message.reply_photo(response.content)
     return CHOOSING
 
 
