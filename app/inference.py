@@ -4,7 +4,7 @@ from typing import List, Optional, IO
 
 import numpy as np
 import tritonclient.grpc as grpcclient
-from PIL import Image
+
 
 from const import URL, CLIENT_TIMEOUT
 from models import User
