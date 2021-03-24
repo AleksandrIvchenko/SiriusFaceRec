@@ -183,7 +183,7 @@ def pipeline(img_raw, loc, conf, landms):
     resize = 1
 
     img = expand2square(img_raw, (0, 0, 0))
-    img.thumbnail((640, 640), Image.ANTIALIAS)
+    img = img.resize((640, 640), Image.ANTIALIAS)
     img = np.array(img)
     im_height, im_width, _ = img.shape
     scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
@@ -270,7 +270,7 @@ def load_image(file):
     img.load()
     img = img.convert('RGB')
     img = expand2square(img, (0, 0, 0))
-    img.thumbnail(size, Image.ANTIALIAS)
+    img = img.resize(size, Image.ANTIALIAS)
     image_array = np.float32(img)
     image_array = (image_array - mean) / (std + sys.float_info.epsilon)
     image_array = np.transpose(image_array, (2, 0, 1))

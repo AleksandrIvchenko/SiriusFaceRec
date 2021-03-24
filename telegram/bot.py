@@ -111,7 +111,7 @@ def main() -> None:
                 MessageHandler(Filters.regex('^Определить человека$'), recognize_choice),
                 MessageHandler(Filters.regex('^Добавить человека$'), add_choice),
                 MessageHandler(Filters.regex('^Выход$'), cancel),
-                MessageHandler(Filters.photo, test_photo),
+                MessageHandler(Filters.photo, photo),
             ],
             PHOTO: [MessageHandler(Filters.photo, photo)],
             ADD_PHOTO: [MessageHandler(Filters.photo, add_photo)],

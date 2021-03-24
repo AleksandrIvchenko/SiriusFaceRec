@@ -20,7 +20,7 @@
         {% for user in users %}
         <tr>
             <td>{{ user.name }}</td>
-            <td>{{ user.emb }}</td>
+            <td>{{ user.emb[0:30] }}</td>
             <td>{{ user.filename }}</td>
         </tr>
         {% endfor %}
