@@ -1,4 +1,14 @@
-# SiriusFaceRec
+# Face Recognition. Сервис для распознавания лиц
+Сириус, 2021
+
+### Архитектура
+- Модель 1: детектор - RetinaFace
+- Модель 2: экстрактор - ResNet50 + Arcface + CrossEntropyLoss
+
+### Контейнеры
+1) triton: NVIDIA Triton Inference Server https://developer.nvidia.com/nvidia-triton-inference-server
+2) web: Fast-API с SQLite https://fastapi.tiangolo.com/
+3) telegram: телеграм бот https://python-telegram-bot.org/
 
 ### Установка
 1) Docker https://docs.docker.com/engine/install/
