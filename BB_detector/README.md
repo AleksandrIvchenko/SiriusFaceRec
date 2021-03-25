@@ -127,3 +127,6 @@ author={Deng, Jiankang and Guo, Jia and Yuxiang, Zhou and Jinke Yu and Irene Kot
 booktitle={arxiv},
 year={2019}
 ```
+## AP vs mAP
+https://towardsdatascience.com/breaking-down-mean-average-precision-map-ae462f623a52#1a5
+
