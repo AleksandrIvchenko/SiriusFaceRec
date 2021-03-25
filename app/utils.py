@@ -240,7 +240,13 @@ def pipeline(img_raw, loc, conf, landms):
                 continue
             b = list(map(int, b))
 
+
     b = list(map(int, dets[np.argmax(bb_squares)]))
+    cv2.rectangle(img_raw, (b[0], b[1]), (b[2], b[3]), (0, 255, 0), 4)
+    cx = b[0]
+    cy = b[1] + 12
+    # Thith code can write a text
+    # cv2.putText(img_raw, text, (cx, cy), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
 
     landmarks = np.array([
         [b[5], b[6]],
@@ -252,12 +258,12 @@ def pipeline(img_raw, loc, conf, landms):
 
     face = cut_face(img=img, ldm=landmarks, resize=128)
 
-    return face, landmarks
+    return face, landmarks, img_raw_bb
 
 
 def detector_postprocessing(output0_data, output1_data, output2_data, raw_image):
     loc, conf, landms = output0_data, output1_data, output2_data
-    image, landmarks = pipeline(raw_image, loc, conf, landms)
+    image, landmarks, img_raw_bb = pipeline(raw_image, loc, conf, landms)
 
     return image, landmarks
 

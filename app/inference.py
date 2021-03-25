@@ -92,7 +92,7 @@ def get_embedding(file: Optional[IO]) -> np.ndarray:
     image_array = load_image(file)
     o1, o2, o3 = detector(image_array)
 
-    image, landmarks = detector_postprocessing(o1, o2, o3, Image.open(file))
+    image, landmarks, img_raw_bb = detector_postprocessing(o1, o2, o3, Image.open(file))
     image_array = np.float32(image)
     image_array = (image_array - mean) / std
     image_array = np.transpose(image_array, (2, 0, 1))
