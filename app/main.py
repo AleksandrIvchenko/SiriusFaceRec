@@ -31,7 +31,7 @@ def get_db():
 
 def _get_emb_and_create_user(name: str = Form(...), file: UploadFile = File(...), db: Session = Depends(get_db)):
     try:
-        emb = json.dumps(get_embedding(file.file).tolist())
+        emb = json.dumps(get_embedding(file.file)[0].tolist())
     except:
         return 'На фотографии не обнаружено лицо'
     crud.create_user(db=db, name=name, emb=emb, filename=file.filename)
@@ -41,12 +41,13 @@ def _get_emb_and_create_user(name: str = Form(...), file: UploadFile = File(...)
 def _find_user_by_photo(file: UploadFile = File(...), db: Session = Depends(get_db)):
     users = crud.get_users(db)
     try:
-        user_name = get_user_by_photo(file.file, users)
+        user_name, img = get_user_by_photo(file.file, users)
         if user_name == '':
             return 'Пользователя нет в базе'
-    except:
+    except Exception as e:
+        print(e)
         return 'На фотографии не обнаружено лицо'
-    return f'Это пользователь {user_name}'
+    return img  # f'Это пользователь {user_name}'
 
 
 @app.get('/')
@@ -77,9 +78,9 @@ def inference_photo_web(request: Request, file: UploadFile = File(...), db: Sess
     return templates.TemplateResponse('index.html', {'request': request, 'message': message})
 
 
-@app.post('/parse/', response_class=PlainTextResponse)
+@app.post('/parse/')
 async def inference_photo_api(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    return _find_user_by_photo(file, db)
+    return StreamingResponse(_find_user_by_photo(file, db), media_type="image/png")
 
 
 @app.get('/is_live/')

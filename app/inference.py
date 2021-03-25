@@ -1,7 +1,8 @@
+import io
 import json
 import sys
 from io import BytesIO
-from typing import List, Optional, IO
+from typing import List, Optional, IO, Tuple
 
 import numpy as np
 import tritonclient.grpc as grpcclient
@@ -79,24 +80,23 @@ def extractor(image):
     return embedding
 
 
-def get_embedding(file: Optional[IO]) -> np.ndarray:
+def get_embedding(file: Optional[IO]) -> Tuple[np.ndarray, Image.Image]:
     mean = np.array([0.485 * 255, 0.456 * 255, 0.406 * 255])
     std = np.array([0.229 * 255, 0.224 * 255, 0.225 * 255])
 
     image_array = load_image(file)
     o1, o2, o3 = detector(image_array)
-
-    image, landmarks = detector_postprocessing(o1, o2, o3, Image.open(file))
+    image, landmarks, img_raw = detector_postprocessing(o1, o2, o3, Image.open(file))
     image_array = np.float32(image)
     image_array = (image_array - mean) / std
     image_array = np.transpose(image_array, (2, 0, 1))
     image_array = image_array[np.newaxis, ...]
     embedding = extractor(image_array.astype(np.float32))
-    return np.squeeze(embedding)
+    return np.squeeze(embedding), img_raw
 
 
-def get_user_by_photo(file: Optional[IO], users: List[User]) -> str:
-    new_embedding = get_embedding(file)
+def get_user_by_photo(file: Optional[IO], users: List[User]) -> Tuple[str, Optional[BytesIO]]:
+    new_embedding, img_raw = get_embedding(file)
     embeddings = []
     names = []
     for user in users:
@@ -107,9 +107,13 @@ def get_user_by_photo(file: Optional[IO], users: List[User]) -> str:
     min_index = np.argmin(dists)
     print(names)
     print(dists)
-    if dists[min_index] > 1.1:
-        return ''
-    return users[min_index].name
+    if dists[min_index] > 1.28:
+        print('not in base')
+        return '', None
+    temp = BytesIO()
+    img_raw.save(temp, format="png")
+    temp.seek(0)
+    return users[min_index].name, temp
 
 
 def get_embedding2(file: Optional[IO]):

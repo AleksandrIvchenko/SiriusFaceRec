@@ -241,6 +241,9 @@ def pipeline(img_raw, loc, conf, landms):
             b = list(map(int, b))
 
     b = list(map(int, dets[np.argmax(bb_squares)]))
+    print(type(img_raw))
+    img_raw = cv2.rectangle(np.array(img_raw), (b[0], b[1]), (b[2], b[3]), (0, 255, 0), 4)
+    img_raw = Image.fromarray(img_raw, 'RGB')
 
     landmarks = np.array([
         [b[5], b[6]],
@@ -252,14 +255,14 @@ def pipeline(img_raw, loc, conf, landms):
 
     face = cut_face(img=img, ldm=landmarks, resize=128)
 
-    return face, landmarks
+    return face, landmarks, img_raw
 
 
 def detector_postprocessing(output0_data, output1_data, output2_data, raw_image):
     loc, conf, landms = output0_data, output1_data, output2_data
-    image, landmarks = pipeline(raw_image, loc, conf, landms)
+    image, landmarks, img_raw = pipeline(raw_image, loc, conf, landms)
 
-    return image, landmarks
+    return image, landmarks, img_raw
 
 
 def load_image(file):

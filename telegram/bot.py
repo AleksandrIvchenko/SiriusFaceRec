@@ -43,16 +43,19 @@ def photo(update: Update, _: CallbackContext) -> int:
     photo_file = update.message.photo[-1].get_file()
     files = {'file': photo_file.download_as_bytearray()}
     response = requests.post(URL_PARSE, files=files)
-    logger.info(response.text)
-    logger.info(f'User {user.first_name} loaded photo')
-    update.message.reply_text(
-        f'Отлично. Вот результат: {response.text}',
-    )
+    # logger.info(response.text)
+    # logger.info(f'User {user.first_name} loaded photo')
+    # update.message.reply_text(
+    #     f'Отлично. Вот результат: {response.text}',
+    # )
+    if response.status_code == 200:
+        update.message.reply_photo(response.content)
     # update.message.reply_photo(open('user_photo.jpg', 'rb'))
     update.message.reply_text(
         'Выберите дальнейшее действие',
         reply_markup=ReplyKeyboardMarkup(_REPLY_KEYBOARD, one_time_keyboard=True),
     )
+
     return CHOOSING
 
 
