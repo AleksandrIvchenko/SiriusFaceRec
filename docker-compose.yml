@@ -17,7 +17,6 @@ services:
       - "80:80"
     volumes:
       - ./data/sqlite.db:/app/sqlite.db
-      - ./app:/app
     runtime: nvidia
   telegram:
     build: telegram

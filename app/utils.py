@@ -97,6 +97,7 @@ def decode(loc, priors, variances):
         decoded bounding box predictions
     """
 
+    # print(priors.shape, loc.shape, priors.shape)
     boxes = torch.cat((
         priors[:, :2] + loc[:, :2] * variances[0] * priors[:, 2:],
         priors[:, 2:] * torch.exp(loc[:, 2:] * variances[1])), 1)
@@ -144,7 +145,7 @@ class PriorBox():
         self.min_sizes = cfg['min_sizes']
         self.steps = cfg['steps']
         self.clip = cfg['clip']
-        self.image_size = image_size
+        self.image_size = 640, 640
         self.feature_maps = [[ceil(self.image_size[0]/step), ceil(self.image_size[1]/step)] for step in self.steps]
         self.name = "s"
 
@@ -179,36 +180,30 @@ def pipeline(img_raw, loc, conf, landms):
     torch.set_grad_enabled(False)
     cfg = {'name': 'Resnet50', 'min_sizes': [[16, 32], [64, 128], [256, 512]], 'steps': [8, 16, 32], 'variance': [0.1, 0.2], 'clip': False, 'loc_weight': 2.0, 'gpu_train': True, 'batch_size': 24, 'ngpu': 4, 'epoch': 100, 'decay1': 70, 'decay2': 90, 'image_size': 840, 'pretrain': True, 'return_layers': {'layer2': 1, 'layer3': 2, 'layer4': 3}, 'in_channel': 256, 'out_channel': 256}
 
-    device = 'cuda'
     resize = 1
 
-    img = np.float32(img_raw)
-
+    img = expand2square(img_raw, (0, 0, 0))
+    img.thumbnail((640, 640), Image.ANTIALIAS)
+    img = np.array(img)
     im_height, im_width, _ = img.shape
     scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
-    img -= (104, 117, 123)
-    img = img.transpose(2, 0, 1)
-    img = torch.from_numpy(img).unsqueeze(0)
-    img = img.to(device)
-    scale = scale.to(device)
 
     priors = PriorBox(cfg, image_size=(im_height, im_width)).forward()
 
-    priors = priors.to(device)
-    prior_data = priors.data
-
-    boxes = decode(loc.data.squeeze(0), prior_data, cfg['variance'])
+    loc = torch.from_numpy(loc)
+    conf = torch.from_numpy(conf)
+    landms = torch.from_numpy(landms)
+    boxes = decode(loc.squeeze(0), priors, cfg['variance'])
     boxes = boxes * scale / resize
-    boxes = boxes.cpu().numpy()
-    scores = conf.squeeze(0).data.cpu().numpy()[:, 1]
+    boxes = boxes.numpy()
+    scores = conf.squeeze(0).numpy()[:, 1]
 
-    landms = decode_landm(landms.data.squeeze(0), prior_data, cfg['variance'])
-    scale1 = torch.Tensor([img.shape[3], img.shape[2], img.shape[3], img.shape[2],
-                           img.shape[3], img.shape[2], img.shape[3], img.shape[2],
-                           img.shape[3], img.shape[2]])
-    scale1 = scale1.to(device)
+    landms = decode_landm(landms.squeeze(0), priors, cfg['variance'])
+    scale1 = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0],
+                           img.shape[1], img.shape[0], img.shape[1], img.shape[0],
+                           img.shape[1], img.shape[0]])
     landms = landms * scale1 / resize
-    landms = landms.cpu().numpy()
+    landms = landms.numpy()
 
     # ignore low scores
     inds = np.where(scores > confidence_threshold)[0]
@@ -225,7 +220,6 @@ def pipeline(img_raw, loc, conf, landms):
     # do NMS
     dets = np.hstack((boxes, scores[:, np.newaxis])).astype(np.float32, copy=False)
     keep = py_cpu_nms(dets, nms_threshold)
-    # keep = nms(dets, args.nms_threshold,force_cpu=args.cpu)
     dets = dets[keep, :]
     landms = landms[keep]
 
@@ -249,19 +243,19 @@ def pipeline(img_raw, loc, conf, landms):
         [b[13], b[14]]
     ], dtype=np.float32)
 
-    face = cut_face(img=img_raw, ldm=landmarks, resize=256)
+    face = cut_face(img=img, ldm=landmarks, resize=128)
 
     return face, landmarks
 
 
-def detector_postprocessing (output0_data, output1_data, output2_data, raw_image):
+def detector_postprocessing(output0_data, output1_data, output2_data, raw_image):
     loc, conf, landms = output0_data, output1_data, output2_data
     image, landmarks = pipeline(raw_image, loc, conf, landms)
 
     return image, landmarks
 
 
-def load_image(file, raw = False):
+def load_image(file):
     mean = np.array([0.485*255, 0.456*255, 0.406*255])
     std = np.array([0.229*255, 0.224*255, 0.225*255])
     size = 640, 640
@@ -275,13 +269,4 @@ def load_image(file, raw = False):
     image_array = np.transpose(image_array, (2, 0, 1))
     image_array = image_array[np.newaxis, ...]
     image_array = image_array.astype(np.float32)
-    # resized_img = img.resize((640, 640), Image.BILINEAR)
-    # resized_img = np.array(resized_img)
-    # resized_img = resized_img.astype(np.float32)
-    # resized_img = np.transpose(resized_img, (2, 0, 1))
-    # resized_img = resized_img[np.newaxis, ...]
-    if (raw == True):
-        image_array = cv2.imread(file, cv2.IMREAD_COLOR)
-
     return image_array
-

@@ -1,4 +1,11 @@
-from torch.nn import BatchNorm1d, Identity, Linear, Module, Sequential
+from torch.nn import (
+    BatchNorm1d,
+    Dropout,
+    Identity,
+    Linear,
+    Module,
+    Sequential,
+)
 from torchvision.models import (
     resnet18,
     resnet50,
@@ -21,6 +28,11 @@ class Extractor(Module):
             self.backbone.fc = Identity()
 
         self.classifier = Sequential(
+            #Linear(
+            #    in_features=2048,
+            #    out_features=1024,
+            #),
+            #Dropout(p=0.25),
             Linear(
                 in_features=2048,
                 out_features=out_features,

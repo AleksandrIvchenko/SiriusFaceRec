@@ -15,7 +15,7 @@ class CommonArguments:
     neptune_project_name: str = 'sergevkim/arcface'
     seed: int = 9
     verbose: int = 1
-    version: str = 'arcface1.0'
+    version: str = 'arcface1.6'
 
 
 @dataclass
@@ -24,17 +24,17 @@ class DataArguments:
     data_path: Path = Path('./data/celeba')
     new_size: Tuple[int, int] = (128, 128)
     num_workers: int = 8
-    val_ratio: float = 0.05
+    val_ratio: float = 0.02
 
 
 @dataclass
 class TrainArguments:
     learning_rate: float = 0.1
-    max_epoch: int = 100
+    max_epoch: int = 20
     momentum: float = 0.9
-    new_size: Tuple[int, int] = (128, 128)
     one_batch_overfit: int = 0
-    save_period: int = 5
+    optimizer: str = 'sgd'
+    save_period: int = 2
     scheduler_gamma: float = 0.5
     scheduler_step_size: int = 10
     weight_decay: float = 5e-4
@@ -43,6 +43,8 @@ class TrainArguments:
 @dataclass
 class SpecificArguments:
     n_classes: int = 10178
+    m: float = 0.25
+    s: int = 32
 
 
 print(CommonArguments.device)

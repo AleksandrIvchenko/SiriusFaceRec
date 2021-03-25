@@ -22,7 +22,7 @@ URL_PARSE = 'http://web/parse/'
 URL_ADD = 'http://web/add/'
 TOKEN = '1763937310:AAHFmqPqQADl4Qimq3klBnrHm3WF1aDSHUs'
 CHOOSING, PHOTO, ADD_PHOTO, ADD_FINISH = range(4)
-_REPLY_KEYBOARD = [['Определить человека', 'Добавить человека']]
+_REPLY_KEYBOARD = [['Определить человека', 'Добавить человека', 'Выход']]
 
 
 def start(update: Update, _: CallbackContext) -> int:
@@ -92,9 +92,7 @@ def test_photo(update: Update, _: CallbackContext) -> int:
     files = {'file': photo_file.download_as_bytearray()}
     response = requests.post('http://web/test_normalize/', files=files)
     if response.status_code == 200:
-        with open("test_image.png", 'wb') as f:
-            f.write(response.content)
-    update.message.reply_photo(open('test_image.png', 'rb'))
+        update.message.reply_photo(response.content)
     return CHOOSING
 
 
@@ -112,6 +110,7 @@ def main() -> None:
             CHOOSING: [
                 MessageHandler(Filters.regex('^Определить человека$'), recognize_choice),
                 MessageHandler(Filters.regex('^Добавить человека$'), add_choice),
+                MessageHandler(Filters.regex('^Выход$'), cancel),
                 MessageHandler(Filters.photo, test_photo),
             ],
             PHOTO: [MessageHandler(Filters.photo, photo)],

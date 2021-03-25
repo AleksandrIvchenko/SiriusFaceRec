@@ -3,6 +3,7 @@ import sys
 from io import BytesIO
 from typing import List, Optional, IO
 
+import cv2
 import numpy as np
 import tritonclient.grpc as grpcclient
 from PIL import Image
@@ -85,29 +86,23 @@ def extractor(image):
 
 
 def get_embedding(file: Optional[IO]) -> np.ndarray:
-    try:
-        image_array = load_image(file)
-        o1, o2, o3 = detector(image_array)
+    mean = np.array([0.485 * 255, 0.456 * 255, 0.406 * 255])
+    std = np.array([0.229 * 255, 0.224 * 255, 0.225 * 255])
 
-        image_raw = load_image(file, raw=True)
+    image_array = load_image(file)
+    o1, o2, o3 = detector(image_array)
 
-        image, landmarks = detector_postprocessing(o1, o2, o3, image_raw)
-        image = extractor_preprocessing(
-            img=image,
-            ldm=landmarks,
-            resize=128,
-        )
-        embedding = extractor(image)
-    except:
-        embedding = np.arange(512)
-    return embedding
+    image, landmarks = detector_postprocessing(o1, o2, o3, Image.open(file))
+    image_array = np.float32(image)
+    image_array = (image_array - mean) / std
+    image_array = np.transpose(image_array, (2, 0, 1))
+    image_array = image_array[np.newaxis, ...]
+    embedding = extractor(image_array.astype(np.float32))
+    return np.squeeze(embedding)
 
 
 def get_user_by_photo(file: Optional[IO], users: List[User]) -> str:
-    try:
-        new_embedding = get_embedding(file)
-    except:
-        new_embedding = np.arange(512)
+    new_embedding = get_embedding(file)
     embeddings = []
     for user in users:
         embeddings.append(np.array(json.loads(user.emb), dtype=np.float32))
@@ -118,13 +113,21 @@ def get_user_by_photo(file: Optional[IO], users: List[User]) -> str:
 
 
 def get_embedding2(file: Optional[IO]):
-    test = load_image(file)
-    print(test.shape)
-    test = np.squeeze(test)
-    test = np.transpose(test, (1, 2, 0))
-    print(test.shape)
-    img = Image.fromarray(test, 'RGB')
+    mean = np.array([0.485*255, 0.456*255, 0.406*255])
+    std = np.array([0.229*255, 0.224*255, 0.225*255])
+
+    image_array = load_image(file)
+    o1, o2, o3 = detector(image_array)
+
+    image, landmarks = detector_postprocessing(o1, o2, o3, Image.open(file))
+    image_array = np.float32(image)
+    image_array = (image_array - mean) / std
+    image_array = np.transpose(image_array, (2, 0, 1))
+    image_array = image_array[np.newaxis, ...]
+    embedding = extractor(image_array.astype(np.float32))
+    print(embedding)
+    image = Image.fromarray(image, 'RGB')
     temp = BytesIO()
-    img.save(temp, format="png")
+    image.save(temp, format="png")
     temp.seek(0)
     return temp

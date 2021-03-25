@@ -5,8 +5,8 @@ from cface.models import ArcFaceExtractor
 
 if __name__ == '__main__':
     device = torch.device('cpu')
-    model = ArcFaceExtractor(n_classes=10178)
-    ckpt = torch.load('models/arcface0.4-e10.pt')
+    model = ArcFaceExtractor(n_classes=10178, head_mode='arcface')
+    ckpt = torch.load('models/arcface1.5-e12.pt')
     model.load_state_dict(ckpt['model_state_dict'])
     model.eval()
     output_pt = 'FeatureExtractor.pt'

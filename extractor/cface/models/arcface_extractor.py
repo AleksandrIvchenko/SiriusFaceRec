@@ -1,7 +1,7 @@
 import torch
 import torch.nn.functional as F
 from torch.nn import CrossEntropyLoss
-from torch.optim import SGD
+from torch.optim import Adam, SGD
 from torch.optim.lr_scheduler import LambdaLR
 
 from cface.models import BaseModule
@@ -12,19 +12,23 @@ from cface.utils import ParametersCounter
 class ArcFaceExtractor(BaseModule):
     def __init__(
             self,
+            device: torch.device = torch.device('cpu'),
             extractor_family: str = 'resnet',
             head_mode: str = 'arcface',
             n_layers: int = 50,
             n_hiddens: int = 512,
             n_classes: int = 10,
-            device: torch.device = torch.device('cpu'),
             learning_rate: float = 0.1,
             momentum: float = 0.9,
+            optimizer: str = 'adam',
             weight_decay: float = 5e-4,
+            m: float = 0.25,
+            s: int = 32,
             verbose: bool = True,
         ):
         super().__init__()
         self.device = device
+        self.optimizer = optimizer
         self.learning_rate = learning_rate
         self.momentum = momentum
         self.weight_decay = weight_decay
@@ -39,6 +43,8 @@ class ArcFaceExtractor(BaseModule):
             mode=head_mode,
             in_features=n_hiddens,
             out_features=n_classes,
+            m=m,
+            s=s,
         )
         self.criterion = CrossEntropyLoss()
 
@@ -69,10 +75,10 @@ class ArcFaceExtractor(BaseModule):
         labels = labels.to(self.device)
         embeddings = self.extractor(images)
         outputs = self.head(embeddings, labels)
-        predictions = torch.max(outputs, dim=1).values
+        #predictions = torch.max(outputs, dim=1).values
 
         loss = self.criterion(outputs, labels)
-        accuracy = (predictions == labels).sum().item() / len(batch)
+        accuracy = 0#(predictions == labels).sum().item() / len(batch)
 
         info = {
             'loss': loss,
@@ -97,18 +103,25 @@ class ArcFaceExtractor(BaseModule):
     def configure_optimizers(
             self,
         ):
-        optimizer = SGD(
-            params=self.parameters(),
-            lr=self.learning_rate,
-            momentum=self.momentum,
-            weight_decay=self.weight_decay,
-        )
+        if self.optimizer == 'sgd':
+            optimizer = SGD(
+                params=self.parameters(),
+                lr=self.learning_rate,
+                momentum=self.momentum,
+                weight_decay=self.weight_decay,
+            )
+        elif self.optimizer == 'adam':
+            optimizer = Adam(
+                params=self.parameters(),
+                lr=3e-4,
+            )
 
         def lr_step_func(epoch):
             if epoch < -1:
                 return ((epoch + 1) / 5) ** 2
             else:
-                return 0.1 ** len([m for m in [8, 14] if m - 1 <= epoch])
+                a = len([m for m in [8, 14] if m - 1 <= epoch])
+                return 0.1 ** a 
         scheduler = LambdaLR(
             optimizer=optimizer,
             lr_lambda=lr_step_func,

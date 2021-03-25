@@ -11,6 +11,7 @@ from albumentations import (
     RandomBrightnessContrast,
     Resize,
     RGBShift,
+    ToGray,
 )
 from albumentations.pytorch import ToTensorV2
 from torch.utils.data import DataLoader, Dataset
@@ -99,6 +100,7 @@ class CelebADataModule(BaseDataModule):
                 p=0.25,
             ),
             RandomBrightnessContrast(p=0.25),
+            ToGray(p=0.1),
             Normalize(
                 mean=(0.485, 0.456, 0.406),
                 std=(0.229, 0.224, 0.225),
