@@ -14,6 +14,7 @@ from scipy.io import loadmat
 from bbox import bbox_overlaps
 from IPython import embed
 
+from mean_average_precision import MeanAveragePrecision
 
 def get_gt_boxes(gt_dir):
     """ gt dir: (wider_face_val.mat, wider_easy_val.mat, wider_medium_val.mat, wider_hard_val.mat)"""
@@ -176,6 +177,8 @@ def image_eval(pred, gt, ignore, iou_thresh):
 
         r_keep_index = np.where(recall_list == 1)[0]
         pred_recall[h] = len(r_keep_index)
+        #print ("!!!!!!!!", pred_recall, proposal_list)
+        #break
     return pred_recall, proposal_list
 
 
@@ -228,6 +231,10 @@ def evaluation(pred, gt_path, iou_thresh=0.5):
     pred = get_preds(pred)
     norm_score(pred)
     facebox_list, event_list, file_list, hard_gt_list, medium_gt_list, easy_gt_list = get_gt_boxes(gt_path)
+
+    print (type(facebox_list.shape), facebox_list.shape)
+
+
     event_num = len(event_list)
     thresh_num = 1000
     settings = ['easy', 'medium', 'hard']
@@ -262,8 +269,27 @@ def evaluation(pred, gt_path, iou_thresh=0.5):
                 if len(keep_index) != 0:
                     ignore[keep_index-1] = 1
                 pred_recall, proposal_list = image_eval(pred_info, gt_boxes, ignore, iou_thresh)
+                np.set_printoptions(suppress=True)
+                #print ("IN", pred_info.shape, gt_boxes.shape, ignore, iou_thresh)
+                #print ("pred_info", pred_info)
+                #print ("OUT", pred_recall, proposal_list)
+
 
                 _img_pr_info = img_pr_info(thresh_num, pred_info, proposal_list, pred_recall)
+
+                # compute metric COCO metric
+                metric_fn = MeanAveragePrecision(num_classes=1)
+                pred_data = np.insert(pred_info, 4, 0, axis=1)
+                gt_data = np.insert(gt_boxes, 4, 0, axis=1)
+                gt_data = np.insert(gt_data, 5, 0, axis=1)
+
+                #print ("pred_data.shape", pred_data.shape)
+                #print("pred_data.shape", gt_data.shape)
+
+                #metric_fn.add(pred_data, gt_data)
+
+
+                #print(f"COCO mAP: {metric_fn.value(iou_thresholds=np.arange(0.5, 1.0, 0.05), recall_thresholds=np.arange(0., 1.01, 0.01), mpolicy='soft')['mAP']}")
 
                 pr_curve += _img_pr_info
         pr_curve = dataset_pr_info(thresh_num, pr_curve, count_face)
@@ -272,6 +298,7 @@ def evaluation(pred, gt_path, iou_thresh=0.5):
         recall = pr_curve[:, 1]
 
         ap = voc_ap(recall, propose)
+        print ("AP", ap)
         aps.append(ap)
 
     print("==================== Results ====================")
@@ -279,6 +306,8 @@ def evaluation(pred, gt_path, iou_thresh=0.5):
     print("Medium Val AP: {}".format(aps[1]))
     print("Hard   Val AP: {}".format(aps[2]))
     print("=================================================")
+
+    return (aps[0], aps[1], aps[2])
 
 
 if __name__ == '__main__':
@@ -288,7 +317,43 @@ if __name__ == '__main__':
     parser.add_argument('-g', '--gt', default='./ground_truth/')
 
     args = parser.parse_args()
-    evaluation(args.pred, args.gt)
+
+    e_ap = []
+    m_ap = []
+    h_ap = []
+    list_iou = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95]
+    for iou in list_iou:
+        print (iou)
+
+        e, m, h = evaluation(args.pred, args.gt, iou_thresh = iou)
+        e_ap.append(e)
+        m_ap.append(m)
+        h_ap.append(h)
+
+    print (np.mean(e_ap), np.mean(m_ap), np.mean(h_ap))
+
+    print("___________________")
+    #a_file = open("APe.txt", "w")
+    for row in e_ap:
+        print (row)
+        #np.savetxt(a_file, row)
+    #a_file.close()
+
+    print ("___________________")
+
+    #a_file = open("APm.txt", "w")
+    for row in m_ap:
+        print(row)
+        #np.savetxt(a_file, row)
+    #a_file.close()
+
+    print("___________________")
+
+    #a_file = open("APh.txt", "w")
+    for row in h_ap:
+        print(row)
+        #np.savetxt(a_file, row)
+    #a_file.close()
 
 
 

@@ -62,41 +62,20 @@ def load_model(model, pretrained_path, load_to_cpu):
     model.load_state_dict(pretrained_dict, strict=False)
     return model
 
-#Cutting face function
-def cut_face(img, ldm, resize=256):
-    #src = ldm
-    dst = np.array([[38.2946, 51.6963],
-                    [73.5318, 51.5014],
-                    [56.0252, 71.7366],
-                    [41.5493, 92.3655],
-                    [70.7299, 92.2041]], dtype=np.float32)
-    dst = dst * resize / 112
-    M, inliers = cv2.estimateAffinePartial2D(ldm, dst, method=cv2.RANSAC, ransacReprojThreshold=5)
-    face = cv2.warpAffine(img, M, (resize, resize))
-    return face
-
-
 
 if __name__ == '__main__':
-    print (cfg_re50)
-
-
     torch.set_grad_enabled(False)
     cfg = None
     if args.network == "mobile0.25":
         cfg = cfg_mnet
     elif args.network == "resnet50":
         cfg = cfg_re50
-        print ("resnet50")
     # net and model
     net = RetinaFace(cfg=cfg, phase = 'test')
-    if(args.cpu) : print ("CPU")
-    else: print ("GPU")
-
     net = load_model(net, args.trained_model, args.cpu)
     net.eval()
     print('Finished loading model!')
-    #print(net)
+    print(net)
     cudnn.benchmark = True
     device = torch.device("cpu" if args.cpu else "cuda")
     net = net.to(device)
@@ -105,8 +84,7 @@ if __name__ == '__main__':
 
     # testing begin
     for i in range(100):
-        #image_path = "./curve/test.jpg"
-        image_path = "./curve/scar.jpeg"
+        image_path = "./curve/scar.jpeg.jpg"
         img_raw = cv2.imread(image_path, cv2.IMREAD_COLOR)
 
         img = np.float32(img_raw)
@@ -164,8 +142,6 @@ if __name__ == '__main__':
 
         dets = np.concatenate((dets, landms), axis=1)
 
-
-
         # show image
         if args.save_image:
             for b in dets:
@@ -173,63 +149,19 @@ if __name__ == '__main__':
                     continue
                 text = "{:.4f}".format(b[4])
                 b = list(map(int, b))
-                #(image, start_point, end_point, color, thickness)
-                #cv2.rectangle(img_raw, (b[0], b[1]), (b[2], b[3]), (0, 255, 0), 4)
+                cv2.rectangle(img_raw, (b[0], b[1]), (b[2], b[3]), (0, 0, 255), 2)
                 cx = b[0]
                 cy = b[1] + 12
-                #cv2.putText(img_raw, text, (cx, cy), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
-                #cv2.putText(img_raw, text, (cx, cy), cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 0, 255))
+                cv2.putText(img_raw, text, (cx, cy),
+                            cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
 
                 # landms
-                #cv2.circle(img_raw, (b[5], b[6]), 1, (0, 0, 255), 4)
-                #cv2.circle(img_raw, (b[7], b[8]), 1, (0, 255, 255), 4)
-                #cv2.circle(img_raw, (b[9], b[10]), 1, (255, 0, 255), 4)
-                #cv2.circle(img_raw, (b[11], b[12]), 1, (0, 255, 0), 4)
-                #cv2.circle(img_raw, (b[13], b[14]), 1, (255, 0, 0), 4)
+                cv2.circle(img_raw, (b[5], b[6]), 1, (0, 0, 255), 4)
+                cv2.circle(img_raw, (b[7], b[8]), 1, (0, 255, 255), 4)
+                cv2.circle(img_raw, (b[9], b[10]), 1, (255, 0, 255), 4)
+                cv2.circle(img_raw, (b[11], b[12]), 1, (0, 255, 0), 4)
+                cv2.circle(img_raw, (b[13], b[14]), 1, (255, 0, 0), 4)
+            # save image
 
-
-
-    # save image
-
-    name = "test.jpg"
-    name_rect = "rect.jpg"
-    cv2.imwrite(name, img_raw)
-
-    #print ("bbbbb", b[0], b[1], b[2], b[3])
-
-
-    #croped_image = img_raw[b[1]: b[1] + b[2]-b[0],  b[0]: b[0] + b[3]-b[1] ]
-    croped_image = img_raw[b[1]: b[1] + b[3] - b[1] , b[0]: b[0] + b[2] - b[0]]
-    cv2.imwrite(name_rect, croped_image)
-
-    print("landmarks)", b[5])
-
-    landmarks = np.array([
-                        [b[5], b[6]],
-                        [b[7], b[8]],
-                        [b[9], b[10]],
-                        [b[11], b[12]],
-                        [b[13], b[14]]
-                    ], dtype=np.float32)
-
-
-    #print("landmarks)", (landmarks.shape))
-
-    face = cut_face(img = img_raw, ldm = landmarks, resize=256)
-    name_rect_affin = 'rect_affin.jpg'
-    cv2.imwrite(name_rect_affin, face)
-
-
-    #cv2.imwrite(name_rect, img_raw[b[0]:b[1], b[2]:b[3]])
-
-    # Save landmarks to txt
-    file_name = image_path.split('/')[-1]
-    landmarks_str = '{file_name}    {}  {}  {}  {}  {}  {}  {}  {}  {}  {}'.format(
-        b[5], b[6], b[7], b[8], b[9], b[10], b[11], b[12], b[13], b[14], file_name=file_name)
-
-    text_file = open("landmarks.txt", "w")
-    text_file.write(landmarks_str)
-    text_file.close()
-
-    print(landmarks_str)
-
+            name = "test.jpg"
+            cv2.imwrite(name, img_raw)

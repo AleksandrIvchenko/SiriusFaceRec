@@ -106,7 +106,7 @@ def pipeline(img_raw, loc, conf, landms):
     torch.set_grad_enabled(False)
     #cfg = cfg_re50
 
-    cfg = {'name': 'Resnet50', 'min_sizes': [[16, 32], [64, 128], [256, 512]], 'steps': [8, 16, 32], 'variance': [0.1, 0.2], 'clip': False, 'loc_weight': 2.0, 'gpu_train': True, 'batch_size': 24, 'ngpu': 4, 'epoch': 100, 'decay1': 70, 'decay2': 90, 'image_size': 840, 'pretrain': True, 'return_layers': {'layer2': 1, 'layer3': 2, 'layer4': 3}, 'in_channel': 256, 'out_channel': 256}
+    cfg = {'name': 'Resnet50', 'min_sizes': [[16, 32], [64, 128], [256, 512]], 'steps': [8, 16, 32], 'variance': [0.1, 0.2], 'clip': False, 'loc_weight': 2.0, 'gpu_train': True, 'batch_size': 24, 'ngpu': 4, 'epoch': 100, 'decay1': 70, 'decay2': 90, 'image_size': 640, 'pretrain': True, 'return_layers': {'layer2': 1, 'layer3': 2, 'layer4': 3}, 'in_channel': 256, 'out_channel': 256}
 
     device = 'cuda'
     resize = 1
@@ -234,7 +234,7 @@ if __name__ == '__main__':
     net = torch.jit.load("./weights/FaceDetector.pt", map_location=torch.device(device))
     net.eval()
 
-    image_path = "./curve/scar3.jpeg"
+    image_path = "./curve/scar.jpeg"
 
     img = load_image(image_path)
     img = torch.from_numpy(img)
